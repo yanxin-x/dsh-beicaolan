@@ -73,6 +73,7 @@ window.__ModuleLoader__.load({
       sleepTop: DEFAULTS.layout?.sleepBubble?.top ?? 0.39,
       sleepSize: DEFAULTS.layout?.sleepBubble?.size ?? 0.17,
       typingFrameMs: DEFAULTS.timeline?.typingFrameMs ?? 220,
+      curtainMs: DEFAULTS.outfits?.curtainMs ?? 250,
     };
 
     function applyConfig(c) {
@@ -136,6 +137,7 @@ window.__ModuleLoader__.load({
         sleepTop: c.layout?.sleepBubble?.top ?? RT.sleepTop,
         sleepSize: c.layout?.sleepBubble?.size ?? RT.sleepSize,
         typingFrameMs: c.timeline?.typingFrameMs ?? RT.typingFrameMs,
+        curtainMs: c.outfits?.curtainMs ?? RT.curtainMs,
       });
     }
 
@@ -216,6 +218,7 @@ window.__ModuleLoader__.load({
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'fitting', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = __OUTFIT_COUNT__;
+    const CURTAIN_CLOSE_MS = 250;   // 门从开到关的时长，必须与 CSS 的 transition 一致
     const HOODIE_INDEX = __HOODIE_INDEX__;
 
     /**
@@ -507,20 +510,41 @@ window.__ModuleLoader__.load({
   50%      { transform: translateY(-1px); }
 }
 .dsh-sitter-wrap[data-free='1'] { animation: none !important; z-index: 30; }
-.dsh-sitter-curtain { position: absolute; left: -4px; right: -4px; top: 0; bottom: 0; pointer-events: none; z-index: 6; opacity: 0; }
-.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain { opacity: 1; }
+/* 换装：左右两扇小木门往中间关。门是 CSS 画的（木头纹 + 天蓝小窗 + 金色心形把手），
+   比之前上下压的两块布更像"衣柜"，也更可爱。 */
+.dsh-sitter-curtain { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 6; }
 .dsh-sitter-curtain span {
-  position: absolute; left: 0; right: 0; height: 54%;
+  position: absolute; top: 0; bottom: 0; width: 52%;
   background:
-    repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 3px, rgba(0,0,0,0) 3px 11px),
-    linear-gradient(180deg, #dcae57 0%, #c9902f 70%, #a9751f 100%);
-  transition: transform 190ms cubic-bezier(.4,0,.2,1);
-  box-shadow: 0 0 0 1px rgba(0,0,0,.16) inset;
+    linear-gradient(90deg, rgba(0,0,0,.16), rgba(0,0,0,0) 26%, rgba(255,255,255,.22) 62%, rgba(0,0,0,.14)),
+    repeating-linear-gradient(90deg, #d9a24a 0 9px, #cf9740 9px 10px),
+    #d9a24a;
+  box-shadow: inset 0 0 0 2px #8a5a22, inset 0 0 0 3px #b5813a, inset 0 0 12px rgba(90,50,10,.32);
+  transition: transform var(--curtain-ms, 250ms) cubic-bezier(.34, 1.2, .44, 1);
+  will-change: transform;
 }
-.dsh-sitter-curtain span:first-child { top: 0; transform: translateY(-100%); border-radius: 0 0 6px 6px; }
-.dsh-sitter-curtain span:last-child { bottom: 0; transform: translateY(100%); border-radius: 6px 6px 0 0; }
-.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:first-child { transform: translateY(0); }
-.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:last-child { transform: translateY(0); }
+.dsh-sitter-curtain span:first-child { left: 0; border-radius: 7px 4px 4px 7px; transform: translateX(-101%); }
+.dsh-sitter-curtain span:last-child  { right: 0; border-radius: 4px 7px 7px 4px; transform: translateX(101%); }
+/* 小窗 */
+.dsh-sitter-curtain span::before {
+  content: ''; position: absolute; left: 50%; top: 16%;
+  width: 54%; height: 30%; transform: translateX(-50%);
+  background:
+    linear-gradient(90deg, transparent 47%, #8a5a22 47% 53%, transparent 53%),
+    linear-gradient(180deg, #bfe8f5 0%, #8fcede 100%);
+  border: 2px solid #8a5a22; border-radius: 10px 10px 3px 3px;
+  box-shadow: inset 0 -3px 0 rgba(255,255,255,.45);
+}
+/* 心形把手：装在靠中间那侧的门边 */
+.dsh-sitter-curtain span::after {
+  content: '♥'; position: absolute; top: 52%;
+  font: 11px/1 ui-monospace, Consolas, monospace; color: #ffd34d;
+  text-shadow: 0 0 1px #6b4315, 0 1px 0 #6b4315;
+}
+.dsh-sitter-curtain span:first-child::after { right: 5px; }
+.dsh-sitter-curtain span:last-child::after  { left: 5px; }
+.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:first-child { transform: translateX(0); }
+.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:last-child  { transform: translateX(0); }
 .dsh-sitter-wrap[data-snapping='1'] { transition: left 180ms ease-out, top 180ms ease-out; }
 .dsh-sitter-wrap[data-drag='1'] .dsh-sitter-brick { opacity: 0; }
 .dsh-sitter-wrap[data-drag='1'] {
@@ -1159,7 +1183,11 @@ window.__ModuleLoader__.load({
       const [freePos, setFreePos] = React.useState(null);
       const [snapping, setSnapping] = React.useState(false);
       const [curtain, setCurtain] = React.useState(false);
-      const curtainRef = React.useRef({ form: null, timer: 0 });
+      const curtainRef = React.useRef({ form: null, timer: 0, timer2: 0 });
+      // 屏幕上实际显示的形态：只有"门关上"时才更新，避免看到换装瞬间
+      const [displayForm, setDisplayForm] = React.useState(() => currentForm());
+      // 上一帧的状态：用来判断"是不是刚从睡觉醒过来"
+      const priorStateRef = React.useRef('sleep');
       const [shift, setShift] = React.useState({ x: 0, y: 0 });
       const shiftRef = React.useRef({ x: 0, y: 0 });
       const dragRef = React.useRef(null);
@@ -1397,16 +1425,26 @@ window.__ModuleLoader__.load({
         return () => window.clearInterval(tick);
       }, []);
 
-      // 换装帘子：形态变化时先合拢，闭合瞬间完成切换，再打开
+      // 换装转场：门先关 -> 门合上的那一帧才换图 -> 再开门（这样你看不到"啪"地一下换装）
+      // 从睡觉醒过来时不播这段门：那是"起床"，不是"换衣服"。
       React.useEffect(() => {
-        const form = currentForm();
-        const prev = curtainRef.current.form;
-        if (prev === null) { curtainRef.current.form = form; return; }
-        if (prev === form) return;
-        curtainRef.current.form = form;
-        setCurtain(true);
+        const target = currentForm();
+        if (target === curtainRef.current.form) return;
+        const firstTime = curtainRef.current.form === null;
+        const wokeUp = priorStateRef.current === 'sleep';
         clearTimeout(curtainRef.current.timer);
-        curtainRef.current.timer = window.setTimeout(() => setCurtain(false), 210);
+        clearTimeout(curtainRef.current.timer2);
+        curtainRef.current.form = target;
+        if (firstTime || wokeUp) {
+          setDisplayForm(target);
+          setCurtain(false);
+          return;
+        }
+        setCurtain(true);
+        // 关门 250ms；在门合上的那一刻换图，人眼看不到切换
+        const ms = Math.max(120, Math.min(5000, RT.curtainMs || 250));
+        curtainRef.current.timer = window.setTimeout(() => setDisplayForm(target), ms);
+        curtainRef.current.timer2 = window.setTimeout(() => setCurtain(false), ms + 60);
       }, [cfg, force, working]);
 
       // 上报客户端版本：定期上报，便于确认线上跑的是哪一版
@@ -1721,6 +1759,7 @@ window.__ModuleLoader__.load({
         node.style.setProperty('--pet-h', g.h + 'px');
         node.style.setProperty('--pet-w', g.w + 'px');
         node.style.setProperty('--pet-toppad', LAY().band + 'px');
+        node.style.setProperty('--curtain-ms', (RT.curtainMs || 250) + 'ms');
         node.style.setProperty('--brick-w', g.brickW + 'px');
         node.style.setProperty('--brick-h', g.brickH + 'px');
         node.style.setProperty('--brick-bottom', g.brickBottom + 'px');
@@ -2118,7 +2157,7 @@ window.__ModuleLoader__.load({
               width: g.w + 'px',
               height: g.h + 'px',
               transform: 'scale(' + capped + ')',
-              backgroundImage: 'url("' + (stage >= fullStageOf() ? SPRITES['angry' + angryFrame] : formSprite(currentForm(), 'idle')) + '")',
+              backgroundImage: 'url("' + (stage >= fullStageOf() ? SPRITES['angry' + angryFrame] : formSprite(displayForm, 'idle')) + '")',
             },
           }),
           h('style', null, CSS),
@@ -2148,7 +2187,7 @@ window.__ModuleLoader__.load({
           backgroundRepeat: 'no-repeat',
         };
       } else if (state === 'idle') {
-        const form = currentForm();
+        const form = displayForm;
         // 打字两帧：按 typingFrameMs 交替。第二帧是构建期从第一帧派生的 _f2，
         // 所以每套皮肤/每个季节都自动有同一节奏的"手在敲"，不用逐张出图。
         const tFrame = RT.typingFrameMs > 0
@@ -2163,6 +2202,7 @@ window.__ModuleLoader__.load({
         imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra) + '")' };
       }
 
+      priorStateRef.current = stateRef.current;
       stateRef.current = state;
       const lay = LAY();
 

@@ -7,7 +7,8 @@
     "count": 4,
     "hoodieIndex": 1,
     "force": null,
-    "seasonMode": "season"
+    "seasonMode": "season",
+    "curtainMs": 250
   },
   "timeline": {
     "sleepMs": 30000,
