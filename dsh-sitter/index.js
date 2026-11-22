@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-const BUILD_VERSION = '20261122-201145';
+const BUILD_VERSION = '20261122-201852';
 const PORT_CANDIDATES = [43717, 43718, 43719, 43720];
 const PORT = PORT_CANDIDATES[0];
 const DEFAULTS = {"displayHeight": 83, "embedHeight": 180, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season", "giftFrameMs": 90}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "typingFrameMs": 220, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": 44, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true, "say": {"gapX": 0.04, "gapY": 0.05, "maxW": 1.12}, "think": {"x": 0.6, "y": 0.02, "size": 0.24}, "sleepBubble": {"x": 0.84, "y": 0.26, "size": 0.24}}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}};
@@ -330,10 +330,21 @@ function writeCoins(v) {
 function settleCoins(todayMinutes) {
   const v = readCoins();
   const today = dayKey();
-  if (v.day !== today) { v.day = today; v.minutes = 0; }
+  if (v.day !== today) { v.day = today; v.minutes = 0; v.awardedToday = 0; }
+  // 老数据没有 awardedToday：按今天的时长初始化，避免重复入账
+  if (typeof v.awardedToday !== 'number') {
+    v.awardedToday = Math.floor((v.minutes || 0) / COIN_PER_MIN);
+  }
   if (typeof todayMinutes === 'number' && todayMinutes > (v.minutes || 0)) v.minutes = todayMinutes;
-  const earned = Math.floor((v.minutes || 0) / COIN_PER_MIN);
-  if (earned > (v.total || 0)) v.total = earned;
+  const earnedToday = Math.floor((v.minutes || 0) / COIN_PER_MIN);
+  if (earnedToday > v.awardedToday) {
+    // 只把"今天新增的部分"累加到 total —— 之前是把 total 直接写成 earnedToday，
+    // 导致第二天 earnedToday 变小以后永远赚不到币。
+    v.total = (v.total || 0) + (earnedToday - v.awardedToday);
+    v.awardedToday = earnedToday;
+  } else if (earnedToday < v.awardedToday) {
+    v.awardedToday = earnedToday;      // 当天时长被重置时不倒扣
+  }
   writeCoins(v);
   return v;
 }

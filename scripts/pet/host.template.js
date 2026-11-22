@@ -330,10 +330,21 @@ function writeCoins(v) {
 function settleCoins(todayMinutes) {
   const v = readCoins();
   const today = dayKey();
-  if (v.day !== today) { v.day = today; v.minutes = 0; }
+  if (v.day !== today) { v.day = today; v.minutes = 0; v.awardedToday = 0; }
+  // 老数据没有 awardedToday：按今天的时长初始化，避免重复入账
+  if (typeof v.awardedToday !== 'number') {
+    v.awardedToday = Math.floor((v.minutes || 0) / COIN_PER_MIN);
+  }
   if (typeof todayMinutes === 'number' && todayMinutes > (v.minutes || 0)) v.minutes = todayMinutes;
-  const earned = Math.floor((v.minutes || 0) / COIN_PER_MIN);
-  if (earned > (v.total || 0)) v.total = earned;
+  const earnedToday = Math.floor((v.minutes || 0) / COIN_PER_MIN);
+  if (earnedToday > v.awardedToday) {
+    // 只把"今天新增的部分"累加到 total —— 之前是把 total 直接写成 earnedToday，
+    // 导致第二天 earnedToday 变小以后永远赚不到币。
+    v.total = (v.total || 0) + (earnedToday - v.awardedToday);
+    v.awardedToday = earnedToday;
+  } else if (earnedToday < v.awardedToday) {
+    v.awardedToday = earnedToday;      // 当天时长被重置时不倒扣
+  }
   writeCoins(v);
   return v;
 }

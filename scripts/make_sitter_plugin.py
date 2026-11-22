@@ -144,6 +144,25 @@ def _norm_canvas(path: Path):
     return canvas
 
 
+
+def _diff_pixels(im1, im2) -> int:
+    """两图有多少像素真的不一样（按 RGB + alpha 判，不是只看 alpha）。
+
+    以前这里用 difference(...) 之后读 px[3]，那读的是**alpha 通道的差值**，
+    颜色天差地别但轮廓相同的两张图会被判成"完全一样"。
+    """
+    if im1.size != im2.size:
+        return max(im1.width * im1.height, im2.width * im2.height)
+    d = ImageChops.difference(im1.convert('RGBA'), im2.convert('RGBA'))
+    bands = d.split()
+    r, g, b, a = (list(band.getdata()) for band in bands)
+    cnt = 0
+    for i in range(len(r)):
+        if r[i] > 12 or g[i] > 12 or b[i] > 12 or a[i] > 60:
+            cnt += 1
+    return cnt
+
+
 def _is_second_frame(path: Path) -> bool:
     """判断这张"第二帧"是不是真的换了姿势（而不是只眨眼/直接复制）。
 
@@ -162,8 +181,7 @@ def _is_second_frame(path: Path) -> bool:
         if first.exists():
             a = _norm_canvas(first)
             b = _norm_canvas(path)
-            diff = ImageChops.difference(a, b)
-            n = sum(1 for px in diff.getdata() if px[3] > 10)
+            n = _diff_pixels(a, b)
             ok = (n / max(1, a.width * a.height)) >= 0.02
     except Exception:
         ok = False
@@ -461,10 +479,8 @@ def validate_assets():
                 if a and b:
                     try:
                         ia = Image.open(a).convert('RGBA'); ib = Image.open(b).convert('RGBA')
-                        if ia.size == ib.size:
-                            diff = ImageChops.difference(ia, ib)
-                            if diff.getbbox() is None:
-                                errors.append(f"{fid}.{pose}.nopac: 与戴奶嘴版逐像素相同 → 根本没去奶嘴")
+                        if _diff_pixels(ia, ib) == 0:
+                            errors.append(f"{fid}.{pose}.nopac: 与戴奶嘴版逐像素相同 → 根本没去奶嘴")
                     except Exception:
                         pass
         # 打字第二帧必须是真素材

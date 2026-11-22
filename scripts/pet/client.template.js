@@ -1127,6 +1127,9 @@ window.__ModuleLoader__.load({
       };
 
       const catalog = skins?.items || [];
+      // 缩略图跟随「戴奶嘴」开关：之前固定用 .pac，关掉奶嘴后面板还挂着奶嘴，看着像没更新
+      const pacKey = pacifier ? '.pac' : '.nopac';
+      const thumbOf = (id) => SPRITES[id + '.idle' + pacKey] || SPRITES[id + '.idle.pac'] || SPRITES['s0.idle.pac'];
       const balance = coins?.balance ?? 0;
       const equipped = skins?.equipped ?? null;
 
@@ -1207,7 +1210,7 @@ window.__ModuleLoader__.load({
               className: 'dsh-sitter-pcard' + (equipped === s.id ? ' on' : ''),
               onClick: () => equip(s.id),
             },
-              h('div', { className: 'dsh-sitter-pcard-art', style: { backgroundImage: 'url("' + (SPRITES[s.id + '.idle.pac'] || SPRITES['s0.idle.pac']) + '")' } }),
+              h('div', { className: 'dsh-sitter-pcard-art', style: { backgroundImage: 'url("' + thumbOf(s.id) + '")' } }),
               h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
               h('div', { className: 'dsh-sitter-pcard-hint' }, '已解锁'),
             )),
