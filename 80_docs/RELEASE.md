@@ -1,77 +1,111 @@
-# 发布准备（2026-11-22 实测）
+# 发布记录（2026-11-22）
 
-## 一、当前能做什么
+## 一、已发布
 
-| 事项 | 状态 | 证据 |
-|---|---|---|
-| 本地 git 仓库 | ✅ 已建 | `git log` = 1 条基线提交，工作区 clean |
-| git 直连 github.com | ❌ 被阻断 | `schannel: failed to receive handshake` |
-| git 走代理 + openssl | ✅ **通** | `git ls-remote https://github.com/git/git.git HEAD` → exit 0 |
-| GitHub REST / MCP | ✅ 通 | 上一个会话实测：建仓、写文件、建分支、PR、合并、删除、release 全过 |
-| `gh` CLI | ❌ 未安装 | 只影响侧栏 PR 跟踪，不影响发布 |
-| npm 登录 | ❌ `ENEEDAUTH` | 只影响 `npm publish`；走 git 索引不需要 npm |
+| 项 | 值 |
+|---|---|
+| 仓库 | https://github.com/yanxin-x/dsh-beicaolan （**public**） |
+| 首个提交 | `1f2cafa6ce004df36e9f1ce876bc524e51d05529` |
+| tag | `v1.0.0` |
+| 入库 | 183 个文件 / 30 MB |
+| 插件包 | `dsh-sitter/`（子目录） |
+| 打包实测 | `files` 过滤后 **9 个文件 / 5.6 MB**（`npm pack --dry-run`） |
 
-**唯一的环境坑**：Windows 上 git 默认用 schannel，经过代理时 TLS 握手必失败。
-必须 `http.sslBackend=openssl`。你的全局配置里已经有 `http.proxy=https://127.0.0.1:7897`，
-**只差 sslBackend 这一项**。
+### 安装目标
 
-本仓库已自带（`.git/config`，不会入库）：
+```
+git+https://github.com/yanxin-x/dsh-beicaolan.git#1f2cafa6ce004df36e9f1ce876bc524e51d05529&path:/dsh-sitter
+```
+
+`path:/dsh-sitter` 不能省：仓库根是开发工程，插件包在子目录。
+更新插件时 `install_bundle` 会报 `already-installed`，必须 `remove_bundle` → `install_bundle`。
+
+## 二、仓库里有什么
+
+```
+dsh-beicaolan/
+├─ dsh-sitter/          ← 插件包（用户从 git 装的就是它）
+│   ├─ package.json     dsh.bundle.patch + dsh.client + exports + files + icon
+│   ├─ cordis.patch.yml
+│   ├─ index.js  client.js        （构建产物，必须入库）
+│   ├─ locale/zh.json  en.json    meta.title / description / detail
+│   ├─ docs/DETAIL.md
+│   └─ icon.png                   41 KB（上限 256 KiB）
+├─ assets/              152 个构建输入（150 张精灵 + fitting_meta + 图标）
+├─ scripts/pet/         源码真源：client/host 模板 + config.default.json
+├─ scripts/             构建器 + 3 个校验脚本 + CLI
+├─ 80_docs/             架构 / 红线 / 工作流
+├─ README.md  LICENSE(MIT)  .gitignore
+```
+
+**没进仓库**（留在本地当底稿，`.gitignore` 里写清了）：
+`10_base/` `20_face/` `30_clothes/` `40_actions/` `50_anim/` `00_ref/` `rig/`
+`60_build/` `70_dist/`、`scripts/_*.py`（一次性补丁）、`scripts/*.ps1`、`scripts/pet/experiments/`。
+
+## 三、环境坑（下次直接照抄）
+
+### 1. git 必须 `http.sslBackend=openssl`
+
+Windows git 默认 schannel，过代理必然 `SSL/TLS connection failed`。
+本仓库 `.git/config` 已设（机器相关，不入库）：
 
 ```
 git config http.sslBackend openssl
 git config http.proxy http://127.0.0.1:7897
 ```
 
-要不要推到全局，等你定 —— 推了之后你所有仓库都能走代理，副作用是再也用不了系统证书链。
+全局只差 sslBackend 这一项；要不要推全局等你定。
 
-## 二、待你拍板的四件事
+### 2. 首次 push 会遇到 TLS 抖动，重试即可
 
-### 1. 推到哪个仓库（阻塞项）
+第一次 push 报：
 
-需要：**owner / 仓库名 / public 还是 private**。
-建议命名 `dsh-sitter`；owner 按你账号 `yanxin-x` 的话就是 `https://github.com/yanxin-x/dsh-sitter`。
+```
+TLS connect error: error:0A000126:SSL routines::unexpected eof while reading
+```
 
-### 2. 396 MB 素材怎么办（阻塞项）
+加上这几个参数后一次通过（30 MB）：
 
-当前基线入库 396 MB，其中 `10_base` 占 292 MB。里面**只有 150 张是插件真正加载的**，
-另外 261 张是历史稿、备份、早期方案原料。
+```
+git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 push
+```
 
-三个选项：
+**认证不要写进 remote URL**。用一次性头：
 
-| 方案 | 仓库体积 | 代价 |
+```powershell
+$tok = (Select-String -Path "$env:USERPROFILE\.dsh\cordis.patch.yml" -Pattern "GITHUB_PERSONAL_ACCESS_TOKEN:\s*'([^']+)'").Matches.Groups[1].Value
+$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("x-access-token:$tok"))
+git -c http.extraheader="Authorization: Basic $b64" push
+```
+
+### 3. `npm` 在 PowerShell 里被 ExecutionPolicy 拦
+
+用 `npm.cmd`，别用 `npm`。
+
+### 4. 写文件别让 PowerShell 加 BOM
+
+`Set-Content -Encoding UTF8` 在 PS 5.1 会加 BOM，`node --check pet-cli.mjs` 会报
+`Invalid or unexpected token`（BOM 在 `#!` 前面）。用：
+
+```powershell
+[System.IO.File]::WriteAllText((Resolve-Path $f), $t, (New-Object System.Text.UTF8Encoding($false)))
+```
+
+## 四、还没做
+
+| 项 | 状态 | 说明 |
 |---|---|---|
-| A. 全推（现状） | 396 MB | GitHub 能收（单文件都 <100 MB），但首次 clone 很慢 |
-| B. 只推用到的 150 张 + 代码（推荐） | ~90 MB | 未用素材留在本地并 ignore；历史稿不进版控 |
-| C. git-lfs | ~90 MB + LFS 配额 | 需要装 lfs，GitHub 免费额度 1 GB |
+| 从 git 真机安装一次 | ⚠️ 未实测 | 会动到正在用的 `@local/dsh-sitter`，留着等隔离 profile 里验 |
+| `index.json`（Discover 索引） | ❌ | 想让别人在插件市场里发现才需要；托管到 Pages 或 raw |
+| npm publish | ❌ | `npm whoami` = ENEEDAUTH；走 git 安装不需要 |
+| gh CLI | ❌ | 只影响侧栏 PR 跟踪 |
 
-我倾向 B：**未用素材不是"资产"而是"成本"** —— 它们最该被 git 记住的不是文件本身，
-而是"哪张是定稿"这个结论（已经写在 `INHERIT-20261122.md` 里了）。
+### 从 git 安装怎么验（安全做法）
 
-### 3. npm publish 要不要（非阻塞）
-
-要让别人 `pnpm add @local/dsh-sitter` 才需要。DSH 插件走 git 索引就够了，可以先不做。
-
-### 4. gh CLI 要不要（非阻塞）
-
-装了才能在 DSH 侧栏看 PR 状态。`winget install GitHub.cli` 一条命令。
-
-## 三、发布 DSH 插件的完整链路（上一个会话实测结论）
+不要直接 `remove_bundle` 线上那套。起一个独立 DSH 实例 + 独立 profile，在里面：
 
 ```
-① repo 按插件包结构组织（package.json 带 dsh.client / dsh.bundle 字段）
-② 打 tag + 建 release
-③ 写 index.json，托管在 GitHub Pages 或 raw 链接
-④ 用户在自己的 DSH 里 Discover 添加这个 index URL
-⑤ 安装目标形如：
-     git+https://github.com/<owner>/dsh-sitter.git#<commit>&path:/dsh-sitter
+plugin_manager install_bundle target="git+https://github.com/yanxin-x/dsh-beicaolan.git#1f2cafa6...&path:/dsh-sitter"
 ```
 
-**注意**：`plugin_market` 只是**读取器**，不是发布器。发布 = 自己托管一个 index JSON。
-`plugin_manager install_bundle` 对同名已装包会报 `already-installed`，更新必须
-`remove_bundle` → `install_bundle`。
-
-## 四、推之前我会做的检查
-
-- [ ] 确认仓库里没有 token（`~/.dsh/cordis.patch.yml` 不在本仓库，安全）
-- [ ] `git remote add` 用 `credential.helper=manager`，不把 token 写进 remote URL
-- [ ] 首次 push 后核对：文件数、体积、`dsh-sitter/` 与 `60_build/` 确实没上去
+再确认 bundle 详情页的标题/描述/详情/图标都正常，插件行有图标，宠物能出现在输入框上。
