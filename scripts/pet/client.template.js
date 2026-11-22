@@ -338,7 +338,7 @@ window.__ModuleLoader__.load({
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = __OUTFIT_COUNT__;
-    const GIFT_FRAMES = 8;          // 礼物盒帧表格数（4 列 x 2 行）
+    const GIFT_FRAMES = 5;          // 礼物盒帧数（只取盒子够高、能盖满的 5 帧）
     const HOODIE_INDEX = __HOODIE_INDEX__;
 
     /**
@@ -632,10 +632,11 @@ window.__ModuleLoader__.load({
 /* 换装转场：礼物盒逐帧动画（打包 -> 换装 -> 拆封）。
    帧图是完整的一整张（不需要透明），直接当遮挡层铺满整个挂件区域。 */
 .dsh-sitter-gift {
-  position: absolute; inset: 0;
-  background-size: cover; background-position: center;
+  /* 略微向外溢出：思考云/耳朵在挂件区边缘，遮不满会露头 */
+  position: absolute; inset: -12px -8px -4px -8px;
+  /* 帧图已裁到内容并抠掉背景：直接拉伸铺满，保证完全遮住宠物 */
+  background-size: 100% 100%; background-position: center;
   background-repeat: no-repeat;
-  border-radius: 10px;
   z-index: 9;
   pointer-events: none;
 }
@@ -1552,7 +1553,7 @@ window.__ModuleLoader__.load({
           return;
         }
         const frames = GIFT_FRAMES;
-        const ms = Math.max(40, Math.min(400, RT.giftFrameMs || 90));
+        const ms = Math.max(40, Math.min(2000, RT.giftFrameMs || 90));
         let f = 0;
         const wrapUp = () => {
           if (f < frames) { setGiftFrame(f); f += 1; giftRef.current.timer = window.setTimeout(wrapUp, ms); return; }
@@ -2169,6 +2170,11 @@ window.__ModuleLoader__.load({
                 const bg = el && el.style.backgroundImage;
                 return bg ? bg.length : 0;
               })(),
+              probeGiftFrame: giftFrame,
+              probeDisplayForm: displayForm,
+              probeGiftForm: giftRef.current.form,
+              probePriorState: priorStateRef.current,
+              probeCurForm: currentForm(),
               probeNow: typeof now === 'number' ? now : -1,
               probeLoadedAt: LOADED_AT,
               probeTypingFrameMs: RT.typingFrameMs,

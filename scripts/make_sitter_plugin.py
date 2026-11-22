@@ -64,9 +64,6 @@ PROPS = {
     'gift2': (BASE / 'gift' / f'gift_frame_2.png', 180),
     'gift3': (BASE / 'gift' / f'gift_frame_3.png', 180),
     'gift4': (BASE / 'gift' / f'gift_frame_4.png', 180),
-    'gift5': (BASE / 'gift' / f'gift_frame_5.png', 180),
-    'gift6': (BASE / 'gift' / f'gift_frame_6.png', 180),
-    'gift7': (BASE / 'gift' / f'gift_frame_7.png', 180),
 
     'bubble': (GEN / 'bubble.png', SMALL),
     'iconCoin': (BASE / 'icon_coin.png', SMALL),
@@ -363,13 +360,12 @@ GIFT_ASPECT = 1.15
 
 
 def embed_gift(path: Path, height: int):
-    img = Image.open(path).convert('RGB')
+    img = Image.open(path).convert('RGBA')     # 背景已抠掉，保持透明
     w = max(1, round(img.width * height / img.height))
     img = img.resize((w, height), Image.LANCZOS)
     target_w = round(height * GIFT_ASPECT)
     if w < target_w:
-        bg = img.getpixel((0, 0))
-        canvas = Image.new('RGB', (target_w, height), bg)
+        canvas = Image.new('RGBA', (target_w, height), (0, 0, 0, 0))
         canvas.paste(img, ((target_w - w) // 2, 0))
         img = canvas
     elif w > target_w:
