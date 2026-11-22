@@ -195,6 +195,7 @@ BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
 # 开发者版：本地检出直接用 SITTER_DEV=1 构建，版本号带 -dev 后缀、界面带角标。
 # 发布版（推 tag 的那份）不带后缀，用户装到的就是干净版本。
 BUILD_IS_DEV = os.environ.get('SITTER_DEV') == '1'
+PLUGIN_VERSION = '1.0.3' if not BUILD_IS_DEV else '1.0.3-dev'
 
 
 DETAIL_DOC = """# 贝草兰 · 桌上陪伴
@@ -225,7 +226,7 @@ DETAIL_DOC = """# 贝草兰 · 桌上陪伴
 
 PACKAGE = {
     'name': '@local/dsh-sitter',
-    'version': BUILD_IS_DEV and '1.0.2-dev' or '1.0.2',
+    'version': PLUGIN_VERSION,
     'private': True,
     'description': '贝草兰：坐在输入框上的像素桌宠——陪伴、监督、换装与学习提醒',
     'type': 'module',
@@ -603,7 +604,7 @@ def main() -> int:
               .replace('__SPRITES__', json.dumps(encoded, ensure_ascii=False))
               .replace('__SKINS__', json.dumps(FORMS_META, ensure_ascii=False))
               .replace('__CONFIG_DEFAULTS__', defaults_json)
-              .replace('__DEV_BUILD__', 'true' if BUILD_IS_DEV else 'false').replace('__BUILD_VERSION__', BUILD_VERSION)
+              .replace('__PLUGIN_VERSION__', PLUGIN_VERSION).replace('__DEV_BUILD__', 'true' if BUILD_IS_DEV else 'false').replace('__BUILD_VERSION__', BUILD_VERSION)
               .replace('__RATIO__', f'{max_ratio:.4f}')
               .replace('__SLEEP_MS__', str(SLEEP_MS))
               .replace('__FRAME_MS__', str(FRAME_MS))

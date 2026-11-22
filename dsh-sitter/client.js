@@ -556,6 +556,8 @@ function todaySpecial(now) {
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = 4;
+    const PLUGIN_VERSION = '1.0.3';
+    const BUILD_STAMP = '20261122-223829';
     const LOVE_PER_FLY = 20;       // 攒够 20 颗爱心就起飞一次
     const GIFT_FRAMES = 5;          // 礼物盒帧数（只取盒子够高、能盖满的 5 帧）
     const HOODIE_INDEX = 1;
@@ -1330,6 +1332,10 @@ function todaySpecial(now) {
 .dsh-sitter-panel { padding: 18px 20px 32px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #22222a; }
 .dsh-sitter-panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
 .dsh-sitter-panel-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.dsh-sitter-footer {
+  margin: 6px 0 2px; font-size: 11px; color: #9a9aa8;
+  letter-spacing: .02em; user-select: text;
+}
 .dsh-sitter-devbadge {
   display: inline-block; margin-left: 8px; padding: 1px 6px;
   font-size: 10px; font-weight: 600; letter-spacing: .04em;
@@ -1480,6 +1486,9 @@ function todaySpecial(now) {
         h('div', { className: 'dsh-sitter-status' },
           '数据：' + (skins ? ((skins.items || []).length + ' 件商品') : '加载中…') +
           (coins ? '，余额 ' + coins.balance : '')),
+        h('div', { className: 'dsh-sitter-footer' },
+          '贝草兰 ' + PLUGIN_VERSION + '\u00a0\u00b7\u00a0build ' + BUILD_STAMP,
+        ),
         h('div', { className: 'dsh-sitter-tabs' },
           h('button', { className: tab === 'wardrobe' ? 'on' : '', onClick: () => setTab('wardrobe') }, '衣橱'),
           h('button', { className: tab === 'shop' ? 'on' : '', onClick: () => setTab('shop') }, '商店'),
@@ -1904,7 +1913,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-223228' }),
+            body: JSON.stringify({ v: '20261122-223829' }),
           }).catch(() => {});
         };
         beacon();
@@ -2443,7 +2452,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-223228', results }),
+          body: JSON.stringify({ v: '20261122-223829', results }),
         }).catch(() => {});
       };
 
@@ -2548,7 +2557,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-223228',
+              build: '20261122-223829',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
