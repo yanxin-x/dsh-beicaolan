@@ -621,8 +621,13 @@ function todaySpecial(now) {
      * 返回值就是注册表里的 form.id（不再有 'skin:' 前缀这类临时约定）。
      * outfits.force 兼容三种历史写法：形态 id（"caveman"）、数字（0–3 → s0..s3）、"pajama"。
      */
+    // 记住最近一次非空的强制皮肤：force 短暂为 null（局部配置/首帧）时沿用它，
+    // 否则会掉回"按月份自动"，11 月就是秋装 —— 表现为闪一下别的皮肤。
+    let LAST_FORCE = null;
+
     function currentForm() {
       const force = RT.outfitForce;
+      if (force !== null && force !== undefined && force !== '') LAST_FORCE = force;
       if (force !== null && force !== undefined && force !== '') {
         const byId = FORMS.find((f) => f.id === String(force));
         if (byId) return byId.id;
@@ -631,6 +636,11 @@ function todaySpecial(now) {
           const season = FORMS.find((f) => f.id === 's' + Math.max(0, Math.min(3, Math.round(n))));
           if (season) return season.id;
         }
+      }
+      // force 为空时先用上次记住的，避免闪回季节皮肤
+      if (LAST_FORCE !== null && LAST_FORCE !== undefined && LAST_FORCE !== '') {
+        const byLast = FORMS.find((f) => f.id === String(LAST_FORCE));
+        if (byLast) return byLast.id;
       }
       const hh = new Date().getHours();
       const night = RT.nightFrom > RT.nightTo
@@ -1874,7 +1884,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-221546' }),
+            body: JSON.stringify({ v: '20261122-221753' }),
           }).catch(() => {});
         };
         beacon();
@@ -2414,7 +2424,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-221546', results }),
+          body: JSON.stringify({ v: '20261122-221753', results }),
         }).catch(() => {});
       };
 
@@ -2519,7 +2529,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-221546',
+              build: '20261122-221753',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
