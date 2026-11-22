@@ -58,7 +58,7 @@ PROPS = {
     'brick': (BASE / 'gold_brick.png', SMALL),
     # think_cloud.png 的小尾巴在素材底部就被裁掉了（画到最后一行为止），
     # 所以用完整版 think_cloud_clean.png（无尾巴，底部留有余量）。
-    'think': (BASE / 'think_cloud_clean.png', 52),
+    'think': (BASE / 'think_cloud_full.png', 52),
     'gift0': (BASE / 'gift' / f'gift_frame_0.png', 180),
     'gift1': (BASE / 'gift' / f'gift_frame_1.png', 180),
     'gift2': (BASE / 'gift' / f'gift_frame_2.png', 180),
@@ -112,9 +112,18 @@ FORMS_META = [
 _SECOND_FRAME_CACHE = {}
 
 
+# 少数形态的"第一帧"不叫 typing_*，命名约定推不出第二帧，这里显式登记
+PARTNER_MAP = {
+    'pajama2.png': 'pajama2blink.png',   # 睡衣的打字第一帧叫 pajama2
+}
+
+
 def _blink_partner(rel):
     """typing_X.png -> 同名但 typingblink_ 前缀的候选文件（相对 assets/）"""
     name = Path(rel).name
+    if name in PARTNER_MAP:
+        p = BASE / PARTNER_MAP[name]
+        return p if p.exists() else None
     if 'typing' not in name or 'typingblink' in name:
         return None
     for cand in (name.replace('typing', 'typingblink', 1),):
@@ -124,25 +133,41 @@ def _blink_partner(rel):
     return None
 
 
+def _norm_canvas(path: Path):
+    """按构建时的真实几何把素材归一化：缩到 EMBED_H 高、居中贴到 300 宽画布。
+    两帧原始尺寸常常不同（有的 165x300、有的 300x300），必须归一后才能公平比较。"""
+    img = Image.open(path).convert('RGBA')
+    w = max(1, round(img.width * EMBED_H / img.height))
+    img = img.resize((w, EMBED_H), Image.LANCZOS)
+    if w > PET_CANVAS_W:
+        img = img.resize((PET_CANVAS_W, EMBED_H), Image.LANCZOS)
+        w = PET_CANVAS_W
+    canvas = Image.new('RGBA', (PET_CANVAS_W, EMBED_H), (0, 0, 0, 0))
+    canvas.alpha_composite(img, ((PET_CANVAS_W - w) // 2, 0))
+    return canvas
+
+
 def _is_second_frame(path: Path) -> bool:
     """判断这张"第二帧"是不是真的换了姿势（而不是只眨眼/直接复制）。
 
-    判据：与第一帧相比，变化像素占比 >= 2%。只眨眼约 0.5%，复制品 0%。
+    判据：归一化到同一画布后，变化像素占比 >= 2%。只眨眼约 0.5%，复制品 0%。
     """
     key = str(path)
     if key in _SECOND_FRAME_CACHE:
         return _SECOND_FRAME_CACHE[key]
     ok = False
     try:
-        first = path.with_name(path.name.replace('typingblink', 'typing', 1))
+        rev = {v: k for k, v in PARTNER_MAP.items()}
+        if path.name in rev:
+            first = BASE / rev[path.name]
+        else:
+            first = path.with_name(path.name.replace('typingblink', 'typing', 1))
         if first.exists():
-            a = Image.open(first).convert('RGBA')
-            b = Image.open(path).convert('RGBA')
-            if a.size == b.size:
-                diff = ImageChops.difference(a, b)
-                n = sum(1 for px in diff.getdata() if px[3] > 10)
-                ratio = n / max(1, a.width * a.height)
-                ok = ratio >= 0.02
+            a = _norm_canvas(first)
+            b = _norm_canvas(path)
+            diff = ImageChops.difference(a, b)
+            n = sum(1 for px in diff.getdata() if px[3] > 10)
+            ok = (n / max(1, a.width * a.height)) >= 0.02
     except Exception:
         ok = False
     _SECOND_FRAME_CACHE[key] = ok
@@ -330,6 +355,29 @@ def _flatten_hair_top(img):
     return img
 
 
+
+# 挂件区域（wrap）的宽高比：宽 = h * 1.667，高 = h + band；band 约 0.46h
+# → wrap 约 1.14~1.15 : 1。礼物盒帧图是竖构图，直接 cover 会被上下裁掉，
+# 所以先把帧图补齐成这个比例（左右补奶油底色），构建后正好铺满、不裁。
+GIFT_ASPECT = 1.15
+
+
+def embed_gift(path: Path, height: int):
+    img = Image.open(path).convert('RGB')
+    w = max(1, round(img.width * height / img.height))
+    img = img.resize((w, height), Image.LANCZOS)
+    target_w = round(height * GIFT_ASPECT)
+    if w < target_w:
+        bg = img.getpixel((0, 0))
+        canvas = Image.new('RGB', (target_w, height), bg)
+        canvas.paste(img, ((target_w - w) // 2, 0))
+        img = canvas
+    elif w > target_w:
+        left = (w - target_w) // 2
+        img = img.crop((left, 0, left + target_w, height))
+    return img
+
+
 def embed(path: Path, height: int, dy: int = 0, canvas_on: bool = True):
     """加载素材，缩放到目标高度后统一贴到同一画布（底部居中），再转 base64。
 
@@ -487,7 +535,12 @@ def main() -> int:
             print(f'[skip] {key}: 缺少 {path}')
             continue
         is_gift = key.startswith('gift')
-        b64, w, h = embed(path, height, canvas_on=not is_gift)
+        if is_gift:
+            im2 = embed_gift(path, height)
+            buf = io.BytesIO(); im2.save(buf, format='PNG', optimize=True)
+            b64 = base64.b64encode(buf.getvalue()).decode('ascii')
+        else:
+            b64, w, h = embed(path, height)
         encoded[key] = f'data:image/png;base64,{b64}'
 
     # 形态贴图：统一 key <form>.<pose>.<pac>

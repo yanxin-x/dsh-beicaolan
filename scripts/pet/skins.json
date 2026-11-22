@@ -121,10 +121,12 @@
           "nopac": "nopac_pajama.png"
         },
         "blink": {
-          "pac": "pajama1.png"
+          "pac": "pajama1.png",
+          "nopac": "nopac_blink_pajama.png"
         },
         "typing": {
-          "pac": "pajama2.png"
+          "pac": "pajama2.png",
+          "nopac": "nopac_typing_pajama.png"
         }
       },
       "voice": "base"

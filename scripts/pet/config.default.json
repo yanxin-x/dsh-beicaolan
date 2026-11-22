@@ -23,7 +23,7 @@
   },
   "layout": {
     "initialLift": 26,
-    "seatInset": -6,
+    "seatInset": 44,
     "topPad": 30,
     "freeLeft": null,
     "freeTop": null,
