@@ -13,7 +13,7 @@ import io
 import json
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageChops
 
 ROOT = Path(__file__).resolve().parent.parent   # 仓库根（可移植，不写死盘符）
 PLUGIN = ROOT / 'dsh-sitter'
@@ -59,7 +59,9 @@ PROPS = {
     'sleep': (BASE / 'sleep_dino.png', EMBED_H),
     'strip': (BASE / 'fitting_strip.png', EMBED_H),
     'brick': (BASE / 'gold_brick.png', SMALL),
-    'think': (BASE / 'think_cloud.png', 52),
+    # think_cloud.png 的小尾巴在素材底部就被裁掉了（画到最后一行为止），
+    # 所以用完整版 think_cloud_clean.png（无尾巴，底部留有余量）。
+    'think': (BASE / 'think_cloud_clean.png', 52),
     'bubble': (GEN / 'bubble.png', SMALL),
     'iconCoin': (BASE / 'icon_coin.png', SMALL),
     'iconClock': (BASE / 'icon_clock.png', SMALL),
@@ -96,6 +98,50 @@ FORMS_META = [
      'seat': f.get('seat')}
     for f in FORMS
 ]
+
+
+# ── 打字第二帧：优先用设计稿里的第二帧 ──
+# 历史素材里 typingblink_* 的语义有三种：真·第二姿势 / 只差了眼睛 / 与第一帧逐像素相同。
+# 只有第一种才适合当动画第二帧，后两种用"整张下移"派生更稳。
+_SECOND_FRAME_CACHE = {}
+
+
+def _blink_partner(rel):
+    """typing_X.png -> 同名但 typingblink_ 前缀的候选文件（相对 assets/）"""
+    name = Path(rel).name
+    if 'typing' not in name or 'typingblink' in name:
+        return None
+    for cand in (name.replace('typing', 'typingblink', 1),):
+        p = BASE / cand
+        if p.exists():
+            return p
+    return None
+
+
+def _is_second_frame(path: Path) -> bool:
+    """判断这张"第二帧"是不是真的换了姿势（而不是只眨眼/直接复制）。
+
+    判据：与第一帧相比，变化像素占比 >= 2%。只眨眼约 0.5%，复制品 0%。
+    """
+    key = str(path)
+    if key in _SECOND_FRAME_CACHE:
+        return _SECOND_FRAME_CACHE[key]
+    ok = False
+    try:
+        first = path.with_name(path.name.replace('typingblink', 'typing', 1))
+        if first.exists():
+            a = Image.open(first).convert('RGBA')
+            b = Image.open(path).convert('RGBA')
+            if a.size == b.size:
+                diff = ImageChops.difference(a, b)
+                n = sum(1 for px in diff.getdata() if px[3] > 10)
+                ratio = n / max(1, a.width * a.height)
+                ok = ratio >= 0.02
+    except Exception:
+        ok = False
+    _SECOND_FRAME_CACHE[key] = ok
+    return ok
+
 
 import time as _time
 BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
@@ -168,9 +214,10 @@ INDEX = (PET / 'host.template.js').read_text(encoding='utf-8')
 # 换装 / 切奶嘴 / 换姿势时几何完全一致，不会缩放跳变、不会边缘残留。
 PET_CANVAS_W = 300
 
-# 「打字第二帧」的下移量（贴完画布后的像素，画布高 EMBED_H=180）。
-# 显示高度 83px 时约 1.8px —— 2px 在 83px 下只有 0.9px，肉眼几乎看不出来，所以取 4。
-TYPING_FRAME_PX = 4
+# 「打字第二帧」的纵向位移量（贴完画布后的像素，画布高 EMBED_H=180）。
+# 显示高度 82px 时 1 canvas px ≈ 0.46 屏幕 px，所以要 8 才看得出来（≈3.7px）。
+# 方向朝上：朝下会把脚底裁掉，朝上只是把底部留白多一点。
+TYPING_FRAME_PX = 8
 
 
 TOP_MARGIN = 0          # 画布顶部留 2px 透明边（发尖不再贴画布边缘）
@@ -296,8 +343,10 @@ def embed(path: Path, height: int, dy: int = 0):
         canvas.alpha_composite(img, (x, TOP_MARGIN))
         img = canvas
     if dy:
+        # 统一用 paste：dy 为负=向上（底部留出透明），为正=向下（底部裁掉）。
+        # 打字第二帧用负数，避免把脚底裁掉。
         shifted = Image.new('RGBA', img.size, (0, 0, 0, 0))
-        shifted.alpha_composite(img.crop((0, 0, img.width, img.height - dy)), (0, dy))
+        shifted.paste(img, (0, dy), img)
         img = shifted
 
     buf = io.BytesIO()
@@ -354,6 +403,7 @@ def main() -> int:
     # 形态贴图：统一 key <form>.<pose>.<pac>
     missing = []
     frame2 = 0
+    frame2_real = 0
     for form in FORMS:
         for pose in POSES:
             variants = form['sprites'].get(pose) or {}
@@ -368,14 +418,23 @@ def main() -> int:
                 if pose == 'idle':
                     max_ratio = max(max_ratio, w / h)
                 if pose == 'typing':
-                    b64b, _w, _h = embed(path, EMBED_H, dy=TYPING_FRAME_PX)
+                    # 第二帧优先用「设计时就画好的那帧」（typingblink_*），
+                    # 只有当它与第一帧几乎相同（复制品 / 只差眼睛）时才用位移派生。
+                    partner = _blink_partner(rel)
+                    if partner and _is_second_frame(partner):
+                        b64b, _w, _h = embed(partner, EMBED_H)
+                        src2 = 'real'
+                    else:
+                        b64b, _w, _h = embed(path, EMBED_H, dy=TYPING_FRAME_PX)
+                        src2 = 'shift'
                     encoded[key + '.b'] = f'data:image/png;base64,{b64b}'
                     frame2 += 1
+                    frame2_real += (src2 == 'real')
     if missing:
         print('[warn] 注册表引用了不存在的素材：')
         for m in missing:
             print('   ', m)
-    print(f'  形态 {len(FORMS)} 个，贴图 {len(encoded)} 张（其中打字第二帧 {frame2} 张）')
+    print(f'  形态 {len(FORMS)} 个，贴图 {len(encoded)} 张（打字第二帧 {frame2} 张，其中 {frame2_real} 张用的是真·第二帧素材）')
 
     disp_w = round(DISPLAY_H * max_ratio)
 

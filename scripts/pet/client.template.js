@@ -2000,6 +2000,17 @@ window.__ModuleLoader__.load({
                 const bg = el && el.style.backgroundImage;
                 return bg ? bg.length : 0;
               })(),
+              probeNow: typeof now === 'number' ? now : -1,
+              probeLoadedAt: LOADED_AT,
+              probeTypingFrameMs: RT.typingFrameMs,
+              probeTFrame: RT.typingFrameMs > 0 ? Math.floor((now - LOADED_AT) / RT.typingFrameMs) % 2 : -1,
+              bgHash: (() => {
+                const el = document.querySelector('.dsh-sitter-img');
+                const bg = (el && el.style.backgroundImage) || '';
+                let hsh = 5381;
+                for (let i = 0; i < bg.length; i += 7) hsh = ((hsh * 33) ^ bg.charCodeAt(i)) >>> 0;
+                return hsh.toString(16);
+              })(),
               working: document.querySelector('.dsh-sitter-wrap')?.getAttribute('data-working'),
               pose: (() => {
                 const w = document.querySelector('.dsh-sitter-wrap');
