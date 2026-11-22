@@ -221,7 +221,7 @@ DETAIL_DOC = """# 贝草兰 · 桌上陪伴
 
 PACKAGE = {
     'name': '@local/dsh-sitter',
-    'version': '1.0.1',
+    'version': '1.0.2',
     'private': True,
     'description': '贝草兰：坐在输入框上的像素桌宠——陪伴、监督、换装与学习提醒',
     'type': 'module',
