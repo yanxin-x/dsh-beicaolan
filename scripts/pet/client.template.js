@@ -119,6 +119,7 @@ window.__ModuleLoader__.load({
         // 只有当上层**明确带了** outfits.force 时才改动；否则保留当前值。
         // 之前是 `c.outfits?.force ?? null`，面板切换奶嘴时发的局部配置不含 outfits，
         // 皮肤就被清空、掉回"按季节自动"，看起来就是随机跳皮肤。
+        nightSkippedUntil: c.outfits?.nightSkippedUntil ?? RT.nightSkippedUntil,
         outfitForce: (c.outfits && Object.prototype.hasOwnProperty.call(c.outfits, 'force'))
           ? (c.outfits.force === null ? null : c.outfits.force)
           : RT.outfitForce,
@@ -646,7 +647,9 @@ function todaySpecial(now) {
       const night = RT.nightFrom > RT.nightTo
         ? (hh >= RT.nightFrom || hh < RT.nightTo)
         : (hh >= RT.nightFrom && hh < RT.nightTo);
-      if (night) {
+      // 用户在夜里手动切走过 → 到明早 7 点前不再强行切睡衣
+      const nightSkipped = RT.nightSkippedUntil && Date.now() < RT.nightSkippedUntil;
+      if (night && !nightSkipped) {
         const pj = FORMS.find((f) => f.kind === 'night');
         if (pj) return pj.id;
       }
@@ -931,6 +934,7 @@ function todaySpecial(now) {
 }
 .dsh-sitter-wrap[data-snapping='1'] { transition: left 180ms ease-out, top 180ms ease-out; }
 .dsh-sitter-wrap[data-drag='1'] .dsh-sitter-brick { opacity: 0; }
+.dsh-sitter-wrap[data-fly='1'] .dsh-sitter-brick { opacity: 0; }
 .dsh-sitter-wrap[data-drag='1'] {
   animation: none !important;
   z-index: 40;
@@ -1391,7 +1395,13 @@ function todaySpecial(now) {
         fetch(API_BASE + '/skins/equip', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ id }),
+          body: JSON.stringify({ id, nightSkippedUntil: (() => {
+            const d = new Date();
+            const n = new Date(d);
+            if (d.getHours() >= 23) n.setDate(n.getDate() + 1);
+            n.setHours(7, 0, 0, 0);
+            return n.getTime();
+          })() }),
         }).then(() => {
           try { window.dispatchEvent(new CustomEvent('dsh-sitter:cfg', { detail: { outfits: { force: id } } })); } catch { /* ignore */ }
           load();
@@ -2008,10 +2018,9 @@ function todaySpecial(now) {
 
       /** 唯一的贴图决策：先看是否变身/拖动，再按状态取图 */
       // 起飞 / 拖拽：奥特曼两帧交替（0=平飞，1=挥拳）
-      const ultraSprite = () => {
-        const f = Math.floor((Date.now() - (flyStartRef.current || LOADED_AT)) / 170) % 2;
-        return f ? SPRITES.ultra1 : SPRITES.ultra0;
-      };
+      // 起飞/拖拽只用一个姿势（平飞那一帧）。之前两帧交替会变成
+      // "飞踢 ↔ 起飞"来回切换，看起来像抽搐。
+      const ultraSprite = () => SPRITES.ultra0;
       const spriteFor = (draggingNow, form, pose) => {
         if (draggingNow) return ultraSprite();
         return formSprite(form, pose);

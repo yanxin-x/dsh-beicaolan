@@ -327,6 +327,16 @@ function writeCoins(v) {
   } catch { /* ignore */ }
 }
 
+// 夜间睡衣"用户覆盖"：用户在夜里手动切皮肤后，到明早 7 点前不再强制切回睡衣
+function applyNightSkip(patch) {
+  try {
+    const want = patch && patch.nightSkippedUntil;
+    if (typeof want === 'number' && want > Date.now()) {
+      saveConfig({ outfits: { nightSkippedUntil: want } });
+    }
+  } catch { /* ignore */ }
+}
+
 function settleCoins(todayMinutes) {
   const v = readCoins();
   const today = dayKey();
