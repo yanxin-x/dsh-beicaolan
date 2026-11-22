@@ -1439,7 +1439,7 @@ function todaySpecial(now) {
         hint: f.kind === 'night'
           ? '23:00–07:00 自动'
           : ((f.months || []).join(' / ') + ' 月自动'),
-        art: SPRITES[f.id + '.idle.pac'] || SPRITES['s0.idle.pac'],
+        art: thumbOf(f.id),
       }));
 
       return h('div', { className: 'dsh-sitter-panel' },
@@ -1517,7 +1517,7 @@ function todaySpecial(now) {
           : h('div', { className: 'dsh-sitter-grid' },
             catalog.map((s) => h('div', { key: s.id, className: 'dsh-sitter-pcard' + (s.owned ? ' owned' : '') },
               h('div', { className: 'dsh-sitter-pcard-art' + (s.owned ? '' : ' locked'), style: {
-                backgroundImage: 'url("' + (SPRITES[s.id + '.idle.pac'] || SPRITES['s0.idle.pac']) + '")',
+                backgroundImage: 'url("' + thumbOf(s.id) + '")',
               } }),
               h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
               h('div', { className: 'dsh-sitter-pcard-hint' }, s.desc || ''),
