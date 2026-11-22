@@ -84,5 +84,8 @@
     "durationMs": 4500,
     "quietFrom": 1,
     "quietTo": 7
+  },
+  "love": {
+    "points": 0
   }
 }

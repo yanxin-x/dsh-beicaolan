@@ -150,6 +150,187 @@ window.__ModuleLoader__.load({
     const CELL_RATIO = __CELL_RATIO__;
     const INITIAL_LIFT = __LIFT__;
     const DEBUG = __DEBUG__;
+// ───── 农历 / 节气（1910-2100 数据表 + 换算）─────
+// 数据来源：经典 lunarInfo / lTermInfo 表（公历 1900-2100）
+const LUNAR_INFO = [
+  0x04bd8, 0x04ae0, 0x0a570, 0x054d5, 0x0d260, 0x0d950, 0x16554, 0x056a0, 0x09ad0, 0x055d2,
+  0x04ae0, 0x0a5b6, 0x0a4d0, 0x0d250, 0x1d255, 0x0b540, 0x0d6a0, 0x0ada2, 0x095b0, 0x14977,
+  0x04970, 0x0a4b0, 0x0b4b5, 0x06a50, 0x06d40, 0x1ab54, 0x02b60, 0x09570, 0x052f2, 0x04970,
+  0x06566, 0x0d4a0, 0x0ea50, 0x06e95, 0x05ad0, 0x02b60, 0x186e3, 0x092e0, 0x1c8d7, 0x0c950,
+  0x0d4a0, 0x1d8a6, 0x0b550, 0x056a0, 0x1a5b4, 0x025d0, 0x092d0, 0x0d2b2, 0x0a950, 0x0b557,
+  0x06ca0, 0x0b550, 0x15355, 0x04da0, 0x0a5b0, 0x14573, 0x052b0, 0x0a9a8, 0x0e950, 0x06aa0,
+  0x0aea6, 0x0ab50, 0x04b60, 0x0aae4, 0x0a570, 0x05260, 0x0f263, 0x0d950, 0x05b57, 0x056a0,
+  0x096d0, 0x04dd5, 0x04ad0, 0x0a4d0, 0x0d4d4, 0x0d250, 0x0d558, 0x0b540, 0x0b6a0, 0x195a6,
+  0x095b0, 0x049b0, 0x0a974, 0x0a4b0, 0x0b27a, 0x06a50, 0x06d40, 0x0af46, 0x0ab60, 0x09570,
+  0x04af5, 0x04970, 0x064b0, 0x074a3, 0x0ea50, 0x06b58, 0x05ac0, 0x0ab60, 0x096d5, 0x092e0,
+  0x0c960, 0x0d954, 0x0d4a0, 0x0da50, 0x07552, 0x056a0, 0x0abb7, 0x025d0, 0x092d0, 0x0cab5,
+  0x0a950, 0x0b4a0, 0x0baa4, 0x0ad50, 0x055d9, 0x04ba0, 0x0a5b0, 0x15176, 0x052b0, 0x0a930,
+  0x07954, 0x06aa0, 0x0ad50, 0x05b52, 0x04b60, 0x0a6e6, 0x0a4e0, 0x0d260, 0x0ea65, 0x0d530,
+  0x05aa0, 0x076a3, 0x096d0, 0x04afb, 0x04ad0, 0x0a4d0, 0x1d0b6, 0x0d250, 0x0d520, 0x0dd45,
+  0x0b5a0, 0x056d0, 0x055b2, 0x049b0, 0x0a577, 0x0a4b0, 0x0aa50, 0x1b255, 0x06d20, 0x0ada0,
+  0x14b63, 0x09370, 0x049f8, 0x04970, 0x064b0, 0x168a6, 0x0ea50, 0x06b20, 0x1a6c4, 0x0aae0,
+  0x092e0, 0x0d2e3, 0x0c960, 0x0d557, 0x0d4a0, 0x0da50, 0x05d55, 0x056a0, 0x0a6d0, 0x055d4,
+  0x052d0, 0x0a9b8, 0x0a950, 0x0b4a0, 0x0b6a6, 0x0ad50, 0x055a0, 0x0aba4, 0x0a5b0, 0x052b0,
+  0x0b273, 0x06930, 0x07337, 0x06aa0, 0x0ad50, 0x14b55, 0x04b60, 0x0a570, 0x054e4, 0x0d160,
+  0x0e968, 0x0d520, 0x0daa0, 0x16aa6, 0x056d0, 0x04ae0, 0x0a9d4, 0x0a4d0, 0x0d150, 0x0f252,
+  0x0d520,
+];
+
+const TERM_INFO = [
+  '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e', '97bcf97c3598082c95f8c965cc920f',
+  '97bd0b06bdb0722c965ce1cfcc920f', 'b027097bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e',
+  '97bcf97c359801ec95f8c965cc920f', '97bd0b06bdb0722c965ce1cfcc920f', 'b027097bd097c36b0b6fc9274c91aa',
+  '97b6b97bd19801ec9210c965cc920e', '97bcf97c359801ec95f8c965cc920f', '97bd0b06bdb0722c965ce1cfcc920f',
+  'b027097bd097c36b0b6fc9274c91aa', '9778397bd19801ec9210c965cc920e', '97b6b97bd19801ec95f8c965cc920f',
+  '97bd09801d98082c95f8e1cfcc920f', '97bd097bd097c36b0b6fc9210c8dc2', '9778397bd197c36c9210c9274c91aa',
+  '97b6b97bd19801ec95f8c965cc920e', '97bd09801d98082c95f8e1cfcc920f', '97bd097bd097c36b0b6fc9210c8dc2',
+  '9778397bd097c36c9210c9274c91aa', '97b6b97bd19801ec95f8c965cc920e', '97bcf97c3598082c95f8e1cfcc920f',
+  '97bd097bd097c36b0b6fc9210c8dc2', '9778397bd097c36c9210c9274c91aa', '97b6b97bd19801ec9210c965cc920e',
+  '97bcf97c3598082c95f8c965cc920f', '97bd097bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b97bd19801ec9210c965cc920e', '97bcf97c3598082c95f8c965cc920f', '97bd097bd097c35b0b6fc920fb0722',
+  '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e', '97bcf97c359801ec95f8c965cc920f',
+  '97bd097bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e',
+  '97bcf97c359801ec95f8c965cc920f', '97bd097bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b97bd19801ec9210c965cc920e', '97bcf97c359801ec95f8c965cc920f', '97bd097bd07f595b0b6fc920fb0722',
+  '9778397bd097c36b0b6fc9210c8dc2', '9778397bd19801ec9210c9274c920e', '97b6b97bd19801ec95f8c965cc920f',
+  '97bd07f5307f595b0b0bc920fb0722', '7f0e397bd097c36b0b6fc9210c8dc2', '9778397bd097c36c9210c9274c920e',
+  '97b6b97bd19801ec95f8c965cc920f', '97bd07f5307f595b0b0bc920fb0722', '7f0e397bd097c36b0b6fc9210c8dc2',
+  '9778397bd097c36c9210c9274c91aa', '97b6b97bd19801ec9210c965cc920e', '97bd07f1487f595b0b0bc920fb0722',
+  '7f0e397bd097c36b0b6fc9210c8dc2', '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e',
+  '97bcf7f1487f595b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b97bd19801ec9210c965cc920e', '97bcf7f1487f595b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722',
+  '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e', '97bcf7f1487f531b0b0bb0b6fb0722',
+  '7f0e397bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa', '97b6b97bd19801ec9210c965cc920e',
+  '97bcf7f1487f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b97bd19801ec9210c9274c920e', '97bcf7f0e47f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b0bc920fb0722',
+  '9778397bd097c36b0b6fc9210c91aa', '97b6b97bd197c36c9210c9274c920e', '97bcf7f0e47f531b0b0bb0b6fb0722',
+  '7f0e397bd07f595b0b0bc920fb0722', '9778397bd097c36b0b6fc9210c8dc2', '9778397bd097c36c9210c9274c920e',
+  '97b6b7f0e47f531b0723b0b6fb0722', '7f0e37f5307f595b0b0bc920fb0722', '7f0e397bd097c36b0b6fc9210c8dc2',
+  '9778397bd097c36b0b70c9274c91aa', '97b6b7f0e47f531b0723b0b6fb0721', '7f0e37f1487f595b0b0bb0b6fb0722',
+  '7f0e397bd097c35b0b6fc9210c8dc2', '9778397bd097c36b0b6fc9274c91aa', '97b6b7f0e47f531b0723b0b6fb0721',
+  '7f0e27f1487f595b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722',
+  '9778397bd097c36b0b6fc9274c91aa', '97b6b7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722',
+  '7f0e397bd097c35b0b6fc920fb0722', '9778397bd097c36b0b6fc9274c91aa', '97b6b7f0e47f531b0723b0b6fb0721',
+  '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b0bc920fb0722', '9778397bd097c36b0b6fc9274c91aa',
+  '97b6b7f0e47f531b0723b0787b0721', '7f0e27f0e47f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b0bc920fb0722',
+  '9778397bd097c36b0b6fc9210c91aa', '97b6b7f0e47f149b0723b0787b0721', '7f0e27f0e47f531b0723b0b6fb0722',
+  '7f0e397bd07f595b0b0bc920fb0722', '9778397bd097c36b0b6fc9210c8dc2', '977837f0e37f149b0723b0787b0721',
+  '7f07e7f0e47f531b0723b0b6fb0722', '7f0e37f5307f595b0b0bc920fb0722', '7f0e397bd097c35b0b6fc9210c8dc2',
+  '977837f0e37f14998082b0787b0721', '7f07e7f0e47f531b0723b0b6fb0721', '7f0e37f1487f595b0b0bb0b6fb0722',
+  '7f0e397bd097c35b0b6fc9210c8dc2', '977837f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721',
+  '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722', '977837f0e37f14998082b0787b06bd',
+  '7f07e7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e397bd097c35b0b6fc920fb0722',
+  '977837f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722',
+  '7f0e397bd07f595b0b0bc920fb0722', '977837f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721',
+  '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b0bc920fb0722', '977837f0e37f14998082b0787b06bd',
+  '7f07e7f0e47f149b0723b0787b0721', '7f0e27f0e47f531b0b0bb0b6fb0722', '7f0e397bd07f595b0b0bc920fb0722',
+  '977837f0e37f14998082b0723b06bd', '7f07e7f0e37f149b0723b0787b0721', '7f0e27f0e47f531b0723b0b6fb0722',
+  '7f0e397bd07f595b0b0bc920fb0722', '977837f0e37f14898082b0723b02d5', '7ec967f0e37f14998082b0787b0721',
+  '7f07e7f0e47f531b0723b0b6fb0722', '7f0e37f1487f595b0b0bb0b6fb0722', '7f0e37f0e37f14898082b0723b02d5',
+  '7ec967f0e37f14998082b0787b0721', '7f07e7f0e47f531b0723b0b6fb0722', '7f0e37f1487f531b0b0bb0b6fb0722',
+  '7f0e37f0e37f14898082b0723b02d5', '7ec967f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721',
+  '7f0e37f1487f531b0b0bb0b6fb0722', '7f0e37f0e37f14898082b072297c35', '7ec967f0e37f14998082b0787b06bd',
+  '7f07e7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e37f0e37f14898082b072297c35',
+  '7ec967f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722',
+  '7f0e37f0e366aa89801eb072297c35', '7ec967f0e37f14998082b0787b06bd', '7f07e7f0e47f149b0723b0787b0721',
+  '7f0e27f1487f531b0b0bb0b6fb0722', '7f0e37f0e366aa89801eb072297c35', '7ec967f0e37f14998082b0723b06bd',
+  '7f07e7f0e47f149b0723b0787b0721', '7f0e27f0e47f531b0723b0b6fb0722', '7f0e37f0e366aa89801eb072297c35',
+  '7ec967f0e37f14998082b0723b06bd', '7f07e7f0e37f14998083b0787b0721', '7f0e27f0e47f531b0723b0b6fb0722',
+  '7f0e37f0e366aa89801eb072297c35', '7ec967f0e37f14898082b0723b02d5', '7f07e7f0e37f14998082b0787b0721',
+  '7f07e7f0e47f531b0723b0b6fb0722', '7f0e36665b66aa89801e9808297c35', '665f67f0e37f14898082b0723b02d5',
+  '7ec967f0e37f14998082b0787b0721', '7f07e7f0e47f531b0723b0b6fb0722', '7f0e36665b66a449801e9808297c35',
+  '665f67f0e37f14898082b0723b02d5', '7ec967f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721',
+  '7f0e36665b66a449801e9808297c35', '665f67f0e37f14898082b072297c35', '7ec967f0e37f14998082b0787b06bd',
+  '7f07e7f0e47f531b0723b0b6fb0721', '7f0e26665b66a449801e9808297c35', '665f67f0e37f1489801eb072297c35',
+  '7ec967f0e37f14998082b0787b06bd', '7f07e7f0e47f531b0723b0b6fb0721', '7f0e27f1487f531b0b0bb0b6fb0722',
+];
+
+const TERMS = ['小寒', '大寒', '立春', '雨水', '惊蛰', '春分', '清明', '谷雨',
+  '立夏', '小满', '芒种', '夏至', '小暑', '大暑', '立秋', '处暑',
+  '白露', '秋分', '寒露', '霜降', '立冬', '小雪', '大雪', '冬至'];
+
+function _lYearDays(y) {
+  let sum = 348;
+  for (let i = 0x8000; i > 0x8; i >>= 1) sum += (LUNAR_INFO[y - 1900] & i) ? 1 : 0;
+  return sum + _leapDays(y);
+}
+function _leapMonth(y) { return LUNAR_INFO[y - 1900] & 0xf; }
+function _leapDays(y) { const l = _leapMonth(y); return l ? (LUNAR_INFO[y - 1900] & 0x10000 ? 30 : 29) : 0; }
+function _monthDays(y, m) { return (LUNAR_INFO[y - 1900] & (0x10000 >> m)) ? 30 : 29; }
+
+/** 公历 -> 农历（1900-2100） */
+function solar2lunar(y, m, d) {
+  if (y < 1900 || y > 2100) return null;
+  let offset = (Date.UTC(y, m - 1, d) - Date.UTC(1900, 0, 31)) / 86400000;
+  let i, temp = 0;
+  for (i = 1900; i < 2101 && offset > 0; i++) { temp = _lYearDays(i); offset -= temp; }
+  if (offset < 0) { offset += temp; i--; }
+  const lYear = i;
+  const leap = _leapMonth(lYear);
+  let isLeap = false;
+  for (i = 1; i < 13 && offset > 0; i++) {
+    if (leap > 0 && i === leap + 1 && !isLeap) { --i; isLeap = true; temp = _leapDays(lYear); }
+    else temp = _monthDays(lYear, i);
+    if (isLeap && i === leap + 1) isLeap = false;
+    offset -= temp;
+  }
+  if (offset === 0 && leap > 0 && i === leap + 1) {
+    if (isLeap) isLeap = false;
+    else { isLeap = true; --i; }
+  }
+  if (offset < 0) { offset += temp; --i; }
+  return { lYear, lMonth: i, lDay: offset + 1, isLeap };
+}
+
+/** 第 n 个节气（1=小寒）在公历 y 年该月的第几天 */
+function termDay(y, n) {
+  if (y < 1900 || y > 2100 || n < 1 || n > 24) return 0;
+  const table = TERM_INFO[y - 1900];
+  const info = [
+    parseInt('0x' + table.substr(0, 5)).toString(),
+    parseInt('0x' + table.substr(5, 5)).toString(),
+    parseInt('0x' + table.substr(10, 5)).toString(),
+    parseInt('0x' + table.substr(15, 5)).toString(),
+    parseInt('0x' + table.substr(20, 5)).toString(),
+    parseInt('0x' + table.substr(25, 5)).toString(),
+  ];
+  const cal = [];
+  for (let g = 0; g < 6; g++) {
+    cal.push(info[g].substr(0, 1), info[g].substr(1, 2), info[g].substr(3, 1), info[g].substr(4, 2));
+  }
+  return parseInt(cal[n - 1], 10);
+}
+
+// 生日：2004-03-29 = 农历闰二月初九（闰月按闰二月初九，平月按二月初九）
+const BIRTH_SOLAR = { m: 3, d: 29 };
+const BIRTH_LUNAR = { m: 2, d: 9 };
+
+const LUNAR_FEST = { '1-1': '春节', '1-15': '元宵节', '5-5': '端午节', '7-7': '七夕', '8-15': '中秋节', '9-9': '重阳节', '12-8': '腊八节' };
+const SOLAR_FEST = { '1-1': '元旦', '2-14': '情人节', '3-8': '妇女节', '4-1': '愚人节', '5-1': '劳动节', '6-1': '儿童节', '9-10': '教师节', '10-1': '国庆节', '12-24': '平安夜', '12-25': '圣诞节' };
+
+/** 今天是哪些特殊日子：返回 [{key, label}]，key ∈ birthday / birthdayLunar / fest / term */
+function todaySpecial(now) {
+  const d = now || new Date();
+  const y = d.getFullYear(), m = d.getMonth() + 1, dd = d.getDate();
+  const out = [];
+  if (m === BIRTH_SOLAR.m && dd === BIRTH_SOLAR.d) out.push({ key: 'birthday', label: '生日' });
+  const lu = solar2lunar(y, m, dd);
+  if (lu) {
+    if (lu.lMonth === BIRTH_LUNAR.m && lu.lDay === BIRTH_LUNAR.d) out.push({ key: 'birthdayLunar', label: '农历生日' });
+    const lk = lu.lMonth + '-' + lu.lDay;
+    if (LUNAR_FEST[lk]) out.push({ key: 'fest', label: LUNAR_FEST[lk] });
+    if (lu.lMonth === 12 && lu.lDay === _monthDays(lu.lYear, 12)) out.push({ key: 'fest', label: '除夕' });
+  }
+  const sk = m + '-' + dd;
+  if (SOLAR_FEST[sk]) out.push({ key: 'fest', label: SOLAR_FEST[sk] });
+  for (let n = 1; n <= 24; n++) {
+    const tm = Math.floor((n - 1) / 2) + 1;
+    if (m === tm && dd === termDay(y, n)) out.push({ key: 'term', label: TERMS[n - 1] });
+  }
+  return out;
+}
+
     // ───────────────── 台词系统（零 token，全部本地） ─────────────────
     // 组织方式：按「场景」分组，每组 10+ 句；称呼从 CALL 里轮换，不每句都"小宝贝"。
     // 选句统一走 pickFrom()，带最近 8 句去重。
@@ -215,9 +396,29 @@ window.__ModuleLoader__.load({
         '这身挺适合你', '我照镜子觉得自己还行',
       ],
       // 事件：睡醒
+      fly: [
+        '光之巨人，出发！', '我去绕一圈', '看我飞！', '加满能量了',
+      ],
       wake: [
         '唔…我再醒醒', '睡饱了', '梦见你在写论文', '你回来啦',
         '我打了个盹，现在精神了',
+      ],
+      // 健康提醒
+      health: [
+        '喝口水吧，嘴都干了', '坐直一点，别驼背', '眼睛离屏幕远一点',
+        '站起来走两步', '手腕转一转', '这个姿势坐太久了',
+        '深呼吸，吸满再吐', '肩膀放松，放下', '眨眨眼，别瞪着',
+      ],
+      // 睡觉提醒
+      sleepy: [
+        '几点了，还不睡？', '再写下去明天会后悔', '我困了，你也睡吧',
+        '灯关了吧', '熬夜不长个儿', '先去洗漱，我等你',
+      ],
+      // 小关心
+      care: [
+        '今天过得怎么样', '有没有好好吃饭', '冷不冷，加件衣服',
+        '别硬扛，累了就说', '我一直在', '想抱抱你',
+        '今天也谢谢你', '辛苦了，真的',
       ],
     };
 
@@ -274,6 +475,14 @@ window.__ModuleLoader__.load({
       return (f && f.voice) || 'base';
     }
 
+    // 节日 / 节气 / 生日：当天专属台词
+    const SPECIAL_LINES = {
+      birthday: ['生日快樂！我最喜欢你了', '今天是你的日子', '许个愿吧，我帮你记着', '又长大一岁啦'],
+      birthdayLunar: ['农历生日快乐呀', '今天是你的农历生日', '两个生日都要过，我陪你'],
+      fest: ['今天是{name}呀', '{name}快乐', '过{name}了，吃点好的', '今天是{name}，别只顾着写'],
+      term: ['今天{name}', '{name}了，注意身体', '节气到{name}了'],
+    };
+
     /** 最近说过的，去重（池子不够时不强求） */
     const RECENT = [];
     function pickFrom(poolName) {
@@ -321,6 +530,9 @@ window.__ModuleLoader__.load({
       { pool: 'night', w: 26, re: /熬夜|通宵|睡不着|好晚|几点了/i },
       { pool: 'idle', w: 22, re: /累|困|饿|喝|吃|休息|头疼/i },
       { pool: 'work', w: 18, re: /测试|验证|对比|复现|重跑/i },
+      { pool: 'health', w: 26, re: /腰|脖子|肩|眼睛|头疼|坐太久|颈椎/i },
+      { pool: 'sleepy', w: 30, re: /好晚了|几点了|睡不着|明天再说|困死/i },
+      { pool: 'care', w: 24, re: /累死|崩溃|不想写|压力|焦虑|难顶/i },
     ];
 
     function pickContextLine(text) {
@@ -343,6 +555,7 @@ window.__ModuleLoader__.load({
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = __OUTFIT_COUNT__;
+    const LOVE_PER_FLY = 20;       // 攒够 20 颗爱心就起飞一次
     const GIFT_FRAMES = 5;          // 礼物盒帧数（只取盒子够高、能盖满的 5 帧）
     const HOODIE_INDEX = __HOODIE_INDEX__;
 
@@ -636,6 +849,61 @@ window.__ModuleLoader__.load({
    比之前上下压的两块布更像"衣柜"，也更可爱。 */
 /* 换装转场：礼物盒逐帧动画（打包 -> 换装 -> 拆封）。
    帧图是完整的一整张（不需要透明），直接当遮挡层铺满整个挂件区域。 */
+/* 点击爱心：粉色 ♥ 往上飘并淡出 */
+.dsh-sitter-heart {
+  position: absolute;
+  left: 50%;
+  bottom: 46%;
+  font-size: 15px;
+  line-height: 1;
+  color: #ff5c8a;
+  pointer-events: none;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.75);
+  animation: dshHeartUp 1200ms ease-out forwards;
+  z-index: 7;
+}
+@keyframes dshHeartUp {
+  0%   { transform: translate(-50%, 4px) scale(0.5); opacity: 0; }
+  18%  { opacity: 1; transform: translate(calc(-50% + var(--hx, 0px) * 0.2), -6px) scale(1.15); }
+  100% { transform: translate(calc(-50% + var(--hx, 0px)), -58px) scale(0.85); opacity: 0; }
+}
+
+/* 攒满爱心：奥特曼起飞，绕一圈回到原位 */
+.dsh-sitter-wrap[data-fly='1'] {
+  animation: dshSitterFly 2000ms cubic-bezier(0.32, 0.72, 0.38, 1) 1 !important;
+  z-index: 40;
+}
+@keyframes dshSitterFly {
+  0%   { transform: translate(0, 0) rotate(0deg) scale(1); }
+  12%  { transform: translate(0, 8px) rotate(0deg) scale(0.94); }
+  30%  { transform: translate(-10px, -64px) rotate(-10deg) scale(1.02); }
+  48%  { transform: translate(14px, -118px) rotate(9deg) scale(1.04); }
+  66%  { transform: translate(-6px, -96px) rotate(-5deg) scale(1.02); }
+  85%  { transform: translate(0, -18px) rotate(0deg) scale(0.98); }
+  100% { transform: translate(0, 0) rotate(0deg) scale(1); }
+}
+
+/* 学习提醒到顶：用当前皮肤本体摇头，配一个红色怒标 */
+.dsh-sitter-grow[data-angry='1'] { animation: dshSitterNuh 420ms steps(2) infinite; }
+@keyframes dshSitterNuh {
+  0%   { transform: scale(var(--grow-s, 1)) rotate(-4deg); }
+  50%  { transform: scale(var(--grow-s, 1)) rotate(4deg); }
+  100% { transform: scale(var(--grow-s, 1)) rotate(-4deg); }
+}
+.dsh-sitter-veil[data-angry='1']::after {
+  content: '💢';
+  position: absolute;
+  margin-top: -140px;
+  margin-left: 96px;
+  font-size: 34px;
+  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.18));
+  animation: dshAngryPop 900ms ease-in-out infinite;
+}
+@keyframes dshAngryPop {
+  0%, 100% { transform: scale(1) rotate(-6deg); opacity: 0.95; }
+  50% { transform: scale(1.16) rotate(6deg); opacity: 1; }
+}
+
 .dsh-sitter-gift {
   /* 略微向外溢出：思考云/耳朵在挂件区边缘，遮不满会露头 */
   position: absolute; inset: -12px -8px -4px -8px;
@@ -1283,6 +1551,13 @@ window.__ModuleLoader__.load({
         return !!cur && cur !== INSTANCE_ID;
       });
       const ultraFrameRef = React.useRef(0);
+      const flyStartRef = React.useRef(0);
+      const flyRef = React.useRef(false);
+      const loveRef = React.useRef(0);
+      const heartSeq = React.useRef(0);
+      const specialSaidRef = React.useRef('');
+      const [hearts, setHearts] = React.useState([]);
+      const [fly, setFly] = React.useState(false);
       const [freePos, setFreePos] = React.useState(null);
       const [snapping, setSnapping] = React.useState(false);
       const [giftFrame, setGiftFrame] = React.useState(-1);   // -1 = 不显示
@@ -1638,6 +1913,24 @@ window.__ModuleLoader__.load({
           const nowTs = Date.now();
           if (nowTs - last < need) return;
           const alone = nowTs - lastInput.current > 120000;
+          // 节日 / 节气 / 生日：当天优先说一句专属的（一天只触发一次）
+          const t0 = new Date();
+          const sp = todaySpecial(t0);
+          if (sp.length) {
+            const spKey = t0.getFullYear() + '-' + (t0.getMonth() + 1) + '-' + t0.getDate() + ':' + sp[0].key;
+            if (specialSaidRef.current !== spKey) {
+              specialSaidRef.current = spKey;
+              const pool = SPECIAL_LINES[sp[0].key] || SPECIAL_LINES.fest;
+              const tpl = pool[Math.floor(Math.random() * pool.length)];
+              const line = tpl.indexOf('{name}') >= 0 ? tpl.split('{name}').join(sp[0].label) : tpl;
+              need = Math.round(RT.chatIntervalMs * 0.6);
+              last = nowTs;
+              lastSayRef.current = line;
+              setSay(line);
+              setTimeout(() => setSay(''), RT.chatDurationMs * 1.6);
+              return;
+            }
+          }
           need = Math.round(RT.chatIntervalMs * (0.75 + Math.random() * 0.6) * (busyRef.current ? 1.7 : 1) * (alone ? 0.7 : 1));
           // 60% 优先看你最后一条消息，其余走时段池
           const ctxLine = Math.random() < 0.6 ? pickContextLine(lastUserRef.current) : null;
@@ -1663,6 +1956,7 @@ window.__ModuleLoader__.load({
           .then((r) => r.json())
           .then((c) => {
             applyConfig(c);
+        if (c && c.love && typeof c.love.points === 'number') loveRef.current = c.love.points;
             if (typeof c.resetAt === 'number' && c.resetAt !== LAST_RESET) {
               LAST_RESET = c.resetAt;
               if (c.resetAt > LOADED_AT) {
@@ -1697,15 +1991,18 @@ window.__ModuleLoader__.load({
 
 
       /** 唯一的贴图决策：先看是否变身/拖动，再按状态取图 */
+      // 起飞 / 拖拽：奥特曼两帧交替（0=平飞，1=挥拳）
+      const ultraSprite = () => {
+        const f = Math.floor((Date.now() - (flyStartRef.current || LOADED_AT)) / 170) % 2;
+        return f ? SPRITES.ultra1 : SPRITES.ultra0;
+      };
       const spriteFor = (draggingNow, form, pose) => {
-        if (draggingNow) {
-          return SPRITES.ultra0;
-        }
+        if (draggingNow) return ultraSprite();
         return formSprite(form, pose);
       };
 
       const spriteSleep = (ultraNow) => {
-        if (ultraNow) return SPRITES.ultra0;
+        if (ultraNow) return ultraSprite();
         return SPRITES.sleep;
       };
 
@@ -1889,6 +2186,41 @@ window.__ModuleLoader__.load({
         setPoke(true);
         setTimeout(() => setPoke(false), 600);
         setTimeout(() => setSay(''), 2200);
+        spawnHearts(5);
+        loveRef.current += 1;
+        // 每满 20 颗爱心：奥特曼起飞，绕一圈飞回原位
+        if (loveRef.current % LOVE_PER_FLY === 0) startFly();
+        fetch(API_BASE + '/config', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ love: { points: loveRef.current } }),
+        }).catch(() => {});
+      };
+
+      /** 冒粉色爱心 */
+      const spawnHearts = (n) => {
+        const batch = [];
+        for (let i = 0; i < n; i += 1) {
+          batch.push({ id: (heartSeq.current += 1), dx: Math.round((Math.random() - 0.5) * 44), delay: i * 70 });
+        }
+        setHearts((old2) => old2.concat(batch));
+        const ids = batch.map((b) => b.id);
+        window.setTimeout(() => {
+          setHearts((old2) => old2.filter((hp) => ids.indexOf(hp.id) < 0));
+        }, 1600);
+      };
+
+      /** 起飞：换成奥特曼两帧，向上飞一圈再落回原位 */
+      const startFly = () => {
+        if (flyRef.current) return;
+        flyRef.current = true;
+        flyStartRef.current = Date.now();
+        setFly(true);
+        sayEvent('fly', 'fly', 2400);
+        window.setTimeout(() => {
+          setFly(false);
+          flyRef.current = false;
+        }, 2100);
       };
 
       const reportReminder = () => {
@@ -2307,7 +2639,9 @@ window.__ModuleLoader__.load({
               width: g.w + 'px',
               height: g.h + 'px',
               transform: 'scale(' + capped + ')',
-              backgroundImage: 'url("' + (stage >= fullStageOf() ? SPRITES['angry' + angryFrame] : formSprite(displayForm, 'idle')) + '")',
+              // 以前这里用固定的 angry0-3（画的是冬装），换任何皮肤都会变成黑羽绒服。
+              // 改成：始终用当前皮肤的本体，只靠 CSS 抖动 + 红色怒标表达生气。
+              backgroundImage: 'url("' + formSprite(displayForm, 'idle') + '")',
             },
           }),
           h('style', null, CSS),
@@ -2317,7 +2651,7 @@ window.__ModuleLoader__.load({
             h('button', { className: 'dsh-sitter-modal-btn', onClick: dismiss }, '知道了'),
           ) : h('div', { className: 'dsh-sitter-veil-hint' }, '点我一下'),
         );
-        if (stage >= fullStageOf()) veil.props['data-crack'] = '1';
+        if (stage >= fullStageOf()) { veil.props['data-crack'] = '1'; veil.props['data-angry'] = '1'; }
         return createPortal ? createPortal(veil, document.body) : veil;
       }
       const workingNow = state === 'idle' && (working || force === 'work');
@@ -2335,10 +2669,10 @@ window.__ModuleLoader__.load({
         const pose = workingNow
           ? (tFrame ? 'typingB' : 'typing')
           : (blinking ? 'blink' : 'idle');
-        const src = spriteFor(dragging || ultra, form, pose);
+        const src = spriteFor(dragging || ultra || fly, form, pose);
         imgStyle = { backgroundImage: 'url("' + src + '")' };
       } else {
-        imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra) + '")' };
+        imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra || fly) + '")' };
       }
 
       CUR_VOICE = voiceOf(displayForm);
@@ -2368,6 +2702,7 @@ window.__ModuleLoader__.load({
           'data-free': freePos ? '1' : '0',
           'data-drag': dragging ? '1' : '0',
           'data-snapping': snapping ? '1' : '0',
+          'data-fly': fly ? '1' : '0',
           onPointerDown: RT.dragEnabled ? onDragStart : undefined,
           'data-dragable': RT.dragEnabled ? '1' : '0',
           style: freePos
@@ -2377,6 +2712,11 @@ window.__ModuleLoader__.load({
         },
         h('style', null, CSS),
         h(SeatBrick, { lay }),
+        hearts.map((hp) => h('span', {
+          key: hp.id,
+          className: 'dsh-sitter-heart',
+          style: { '--hx': hp.dx + 'px', animationDelay: hp.delay + 'ms' },
+        }, '♥')),
         giftFrame >= 0 ? h('div', {
           className: 'dsh-sitter-gift',
           style: { backgroundImage: 'url("' + (SPRITES['gift' + giftFrame] || '') + '")' },
