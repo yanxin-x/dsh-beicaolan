@@ -923,6 +923,15 @@ function todaySpecial(now) {
   transform-origin: 50% 100%;
   mix-blend-mode: screen;
 }
+.dsh-sitter-fire-img {
+  width: 108%;
+  height: 42%;
+  top: -10%;
+  background-repeat: no-repeat;
+  background-position: center center;
+  background-size: contain;
+  filter: drop-shadow(0 0 6px rgba(255, 120, 20, 0.55));
+}
 .dsh-sitter-fire i:nth-child(1) {
   left: -4%; width: 36%; height: 64%;
   background: radial-gradient(circle at 50% 78%, #fff2b0 0%, #ffb03a 42%, #ff5a1f 74%, rgba(200,40,0,0) 100%);
@@ -2717,7 +2726,15 @@ function todaySpecial(now) {
             },
           },
             stage >= fullStageOf()
-              ? h('div', { className: 'dsh-sitter-fire', 'aria-hidden': true }, h('i', null), h('i', null), h('i', null))
+              ? (SPRITES.fire0
+                  ? h('div', {
+                      className: 'dsh-sitter-fire dsh-sitter-fire-img',
+                      'aria-hidden': true,
+                      style: {
+                        backgroundImage: 'url("' + (SPRITES['fire' + (Math.floor(((typeof now === 'number' ? now : Date.now()) - LOADED_AT) / 130) % 4)] || SPRITES.fire0) + '")',
+                      },
+                    })
+                  : h('div', { className: 'dsh-sitter-fire', 'aria-hidden': true }, h('i', null), h('i', null), h('i', null)))
               : null,
           ),
           h('style', null, CSS),

@@ -66,6 +66,10 @@ PROPS = {
     'gift3': (BASE / 'gift' / f'gift_frame_3.png', 180),
     'gift4': (BASE / 'gift' / f'gift_frame_4.png', 180),
 
+    # 火焰（生气特效）：素材可选，存在才打包；缺失时客户端自动退回 CSS 火焰
+    **{f'fire{i}': (BASE / f'fire_{i}.png', 90)
+       for i in range(4) if (BASE / f'fire_{i}.png').exists()},
+
     'bubble': (GEN / 'bubble.png', SMALL),
     'iconCoin': (BASE / 'icon_coin.png', SMALL),
     'iconClock': (BASE / 'icon_clock.png', SMALL),
@@ -195,7 +199,7 @@ BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
 # 开发者版：本地检出直接用 SITTER_DEV=1 构建，版本号带 -dev 后缀、界面带角标。
 # 发布版（推 tag 的那份）不带后缀，用户装到的就是干净版本。
 BUILD_IS_DEV = os.environ.get('SITTER_DEV') == '1'
-PLUGIN_VERSION = '1.0.6' if not BUILD_IS_DEV else '1.0.6-dev'
+PLUGIN_VERSION = '1.0.8' if not BUILD_IS_DEV else '1.0.8-dev'
 
 
 DETAIL_DOC = """# 贝草兰 · 桌上陪伴

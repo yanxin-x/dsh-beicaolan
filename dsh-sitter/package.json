@@ -1,6 +1,6 @@
 {
   "name": "@local/dsh-sitter",
-  "version": "1.0.6-dev",
+  "version": "1.0.8",
   "private": true,
   "description": "贝草兰：坐在输入框上的像素桌宠——陪伴、监督、换装与学习提醒",
   "type": "module",
