@@ -27,9 +27,21 @@
     "freeLeft": null,
     "freeTop": null,
     "dragEnabled": true,
-    "say": { "gapX": 0.05, "gapY": 0.08, "maxW": 1.12, "offsetY": 0.30 },
-    "think": { "x": 0.60, "y": 0.02, "size": 0.30 },
-    "sleepBubble": { "x": 0.84, "y": 0.26, "size": 0.24 }
+    "say": {
+      "gapX": 0.04,
+      "gapY": 0.05,
+      "maxW": 1.12
+    },
+    "think": {
+      "x": 0.6,
+      "y": 0.02,
+      "size": 0.24
+    },
+    "sleepBubble": {
+      "x": 0.84,
+      "y": 0.26,
+      "size": 0.24
+    }
   },
   "brick": {
     "height": 20,

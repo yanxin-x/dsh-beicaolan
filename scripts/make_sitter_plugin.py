@@ -92,7 +92,8 @@ SKIN_CATALOG = [
 ]
 FORMS_META = [
     {'id': f['id'], 'label': f['label'], 'kind': f['kind'],
-     'months': f.get('months') or [], 'rotateIndex': f.get('rotateIndex')}
+     'months': f.get('months') or [], 'rotateIndex': f.get('rotateIndex'),
+     'seat': f.get('seat')}
     for f in FORMS
 ]
 

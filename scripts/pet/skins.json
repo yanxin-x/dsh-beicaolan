@@ -147,7 +147,8 @@
           "pac": "typing_caveman.png",
           "nopac": "nopac_typing_caveman.png"
         }
-      }
+      },
+      "seat": 0.3
     },
     {
       "id": "muscle",

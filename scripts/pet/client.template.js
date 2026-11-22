@@ -63,7 +63,7 @@ window.__ModuleLoader__.load({
       nightFrom: DEFAULTS.night?.from ?? 23,
       nightTo: DEFAULTS.night?.to ?? 7,
       // 布局：四个主要元素的位置全在这里，改位置不用翻 CSS
-      sayRight: DEFAULTS.layout?.say?.right ?? 0.32,
+      sayGapX: DEFAULTS.layout?.say?.gapX ?? 0.04,
       sayGapY: DEFAULTS.layout?.say?.gapY ?? 0.07,
       sayMaxW: DEFAULTS.layout?.say?.maxW ?? 1.12,
       thinkX: DEFAULTS.layout?.think?.x ?? 0.56,
@@ -126,7 +126,7 @@ window.__ModuleLoader__.load({
         freeTop: c.layout?.freeTop ?? null,
         nightFrom: c.night?.from ?? RT.nightFrom,
         nightTo: c.night?.to ?? RT.nightTo,
-        sayRight: c.layout?.say?.right ?? RT.sayRight,
+        sayGapX: c.layout?.say?.gapX ?? RT.sayGapX,
         sayGapY: c.layout?.say?.gapY ?? RT.sayGapY,
         sayMaxW: c.layout?.say?.maxW ?? RT.sayMaxW,
         thinkX: c.layout?.think?.x ?? RT.thinkX,
@@ -218,15 +218,26 @@ window.__ModuleLoader__.load({
     const OUTFIT_COUNT = __OUTFIT_COUNT__;
     const HOODIE_INDEX = __HOODIE_INDEX__;
 
+    /**
+     * 某个形态的「屁股高度比例」。
+     * 所有皮肤画在同一画布、脚底对齐，但坐姿不同（盘腿 / 跪坐 / 抱腿），
+     * 屁股在精灵里的高度不一样 —— 所以允许注册表逐形态覆盖，默认用全局 seat.buttRatio。
+     */
+    function buttOf(form) {
+      const f = FORMS.find((x) => x.id === form);
+      if (f && typeof f.seat === 'number') return f.seat;
+      return RT.buttRatio;
+    }
+
     // 由 RT 推导的几何量
-    function G() {
+    function G(form) {
       const h = RT.displayHeight;
       const ref = DEFAULTS.displayHeight;
       const k = h / ref;                       // 相对默认尺寸的缩放
       const brickH = Math.round(RT.brickH * k);
       const overlap = Math.round(RT.brickOverlap * k);
       const sink = Math.round(RT.brickSink * k);
-      const butt = Math.round(h * RT.buttRatio);
+      const butt = Math.round(h * buttOf(form || currentForm()));
       const gap = overlap - brickH + sink + butt;
       return {
         h,
@@ -338,28 +349,42 @@ window.__ModuleLoader__.load({
 
     /**
      * 四个主要元素的像素盒子 —— 全部由宠物尺寸推导，只此一处。
-     *   金砖   ← 以"屁股"为锚（seat.buttRatio），垫在输入框上沿
-     *   台词框 ← 宠物左上方向外展开，不压住脸
-     *   思考云 ← 头顶偏右，尾巴朝下
+     *
+     * 「上方带」(band)：宠物头顶以上那一条，思考云和台词框都住在里面。
+     *   band = max(配置的 topPad, 云高 + 顶部缝隙)
+     * 这样云永远不会被容器裁掉（之前 top 是负数，小尾巴会被切）。
+     *
+     * 横向互不遮挡：台词框的右缘固定在「云的左边减一个 gap」，
+     *   所以两者从构造上就不可能重叠（之前都是各锚各的，长句子就压在一起）。
+     *
+     *   金砖   ← 以"屁股"为锚（逐形态可覆盖的 seat），垫在输入框上沿
+     *   思考云 ← 带内靠右，尾巴朝下
+     *   台词框 ← 云左侧展开，向左生长
      *   呼噜泡 ← 睡觉时头顶右上
-     * CSS 里不再写死位置，改布局只动这里和 config.default.json 的 layout.*
      */
     function LAY() {
-      const g = G();
+      const form = currentForm();
+      const g = G(form);
       const w = g.w;
       const h = g.h;
+      const cloudSize = Math.round(w * RT.thinkSize);
+      const cloudLeft = Math.round(w * RT.thinkX);
+      const gapX = Math.round(w * RT.sayGapX);
+      const band = Math.max(g.topPad, cloudSize + Math.round(h * 0.06));
       return {
+        band,
         pet: { w, h },
         brick: { w: g.brickW, h: g.brickH, bottom: g.brickBottom },
+        think: {
+          left: cloudLeft,
+          top: Math.round(h * RT.thinkY),
+          size: cloudSize,
+        },
         say: {
-          right: Math.round(w * RT.sayRight),
+          // 右缘停在云的左侧（留 gap）——两者从构造上互不遮挡
+          right: Math.round(w - cloudLeft + gapX),
           bottom: Math.round(h + h * RT.sayGapY),
           maxWidth: Math.round(w * RT.sayMaxW),
-        },
-        think: {
-          left: Math.round(w * RT.thinkX),
-          top: Math.round(h * RT.thinkY),
-          size: Math.round(w * RT.thinkSize),
         },
         sleep: {
           right: Math.round(w * RT.sleepRight),
@@ -1695,7 +1720,7 @@ window.__ModuleLoader__.load({
         const g = G();
         node.style.setProperty('--pet-h', g.h + 'px');
         node.style.setProperty('--pet-w', g.w + 'px');
-        node.style.setProperty('--pet-toppad', g.topPad + 'px');
+        node.style.setProperty('--pet-toppad', LAY().band + 'px');
         node.style.setProperty('--brick-w', g.brickW + 'px');
         node.style.setProperty('--brick-h', g.brickH + 'px');
         node.style.setProperty('--brick-bottom', g.brickBottom + 'px');

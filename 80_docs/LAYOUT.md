@@ -44,6 +44,37 @@ right = (容器右缘 − 输入框右缘) + seatInset
 导致"同样的 seatInset 在不同人机器上位置不一样"。现在已彻底解耦——
 面板只保留 `size → displayHeight` 这一条映射，其余字段对页面内挂件**一律无效**。
 
+## 三·五、上方带（band）与「互不遮挡」
+
+宠物头顶以上单独留一条带子，思考云和台词框都住在里面：
+
+```
+band = max(配置的 layout.topPad, 云高 + 顶部缝隙)
+wrap 高度 = pet.h + band
+```
+
+**为什么要有 band**：云的 `top` 曾是负数，等于把云顶伸出容器外，被 dock 的 overflow
+裁掉最后一个小尾巴。现在 band 保证云整只在容器内。
+
+**为什么不会再互相遮挡**：台词框的右缘固定在「云的左边 − gap」：
+
+```
+say.right = w − cloud.left + gap        // gap = layout.say.gapX × w
+```
+
+所以两者从构造上就不可能重叠（以前各锚各的，句子一长就压在一起）。
+
+调整旋钮（`config.default.json`）：
+
+| 想改 | 改 |
+|---|---|
+| 云的大小 | `layout.think.size`（占宠物宽的比例） |
+| 云离头顶多远 | `layout.think.y` |
+| 台词框离云多远 | `layout.say.gapX` |
+| 台词框离头顶多高 | `layout.say.gapY` |
+| 台词最长多宽 | `layout.say.maxW` |
+| 带子最小高度 | `layout.topPad` |
+
 ## 四、打字两帧动画
 
 ### 素材从哪来
