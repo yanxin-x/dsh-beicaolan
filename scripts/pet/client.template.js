@@ -1330,6 +1330,12 @@ function todaySpecial(now) {
 .dsh-sitter-panel { padding: 18px 20px 32px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #22222a; }
 .dsh-sitter-panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
 .dsh-sitter-panel-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.dsh-sitter-devbadge {
+  display: inline-block; margin-left: 8px; padding: 1px 6px;
+  font-size: 10px; font-weight: 600; letter-spacing: .04em;
+  color: #b4530a; background: #ffe9c7; border: 1px solid #f0c078;
+  border-radius: 4px; vertical-align: middle;
+}
 .dsh-sitter-panel-coins { font-size: 13px; color: #6b6b7a; }
 .dsh-sitter-panel-coins b { color: #d4921a; font-size: 15px; }
 .dsh-sitter-panel-size { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 13px; color: #55555f; }
@@ -1445,7 +1451,11 @@ function todaySpecial(now) {
       return h('div', { className: 'dsh-sitter-panel' },
         h('style', null, PANEL_CSS),
         h('div', { className: 'dsh-sitter-panel-head' },
-          h('h2', null, '贝草兰'),
+          h('h2', null, '贝草兰',
+            __DEV_BUILD__ ? h('span', {
+              className: 'dsh-sitter-devbadge',
+              title: '开发者版：本地构建，不是公开发布的版本',
+            }, '开发者版') : null),
           h('div', { className: 'dsh-sitter-panel-coins' }, '吉吉币 ', h('b', null, String(balance))),
         ),
 

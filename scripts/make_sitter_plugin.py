@@ -11,6 +11,7 @@
 import base64
 import io
 import json
+import os
 from pathlib import Path
 
 from PIL import Image, ImageChops
@@ -191,6 +192,9 @@ def _is_second_frame(path: Path) -> bool:
 
 import time as _time
 BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
+# 开发者版：本地检出直接用 SITTER_DEV=1 构建，版本号带 -dev 后缀、界面带角标。
+# 发布版（推 tag 的那份）不带后缀，用户装到的就是干净版本。
+BUILD_IS_DEV = os.environ.get('SITTER_DEV') == '1'
 
 
 DETAIL_DOC = """# 贝草兰 · 桌上陪伴
@@ -221,7 +225,7 @@ DETAIL_DOC = """# 贝草兰 · 桌上陪伴
 
 PACKAGE = {
     'name': '@local/dsh-sitter',
-    'version': '1.0.2',
+    'version': BUILD_IS_DEV and '1.0.2-dev' or '1.0.2',
     'private': True,
     'description': '贝草兰：坐在输入框上的像素桌宠——陪伴、监督、换装与学习提醒',
     'type': 'module',
@@ -599,7 +603,7 @@ def main() -> int:
               .replace('__SPRITES__', json.dumps(encoded, ensure_ascii=False))
               .replace('__SKINS__', json.dumps(FORMS_META, ensure_ascii=False))
               .replace('__CONFIG_DEFAULTS__', defaults_json)
-              .replace('__BUILD_VERSION__', BUILD_VERSION)
+              .replace('__DEV_BUILD__', 'true' if BUILD_IS_DEV else 'false').replace('__BUILD_VERSION__', BUILD_VERSION)
               .replace('__RATIO__', f'{max_ratio:.4f}')
               .replace('__SLEEP_MS__', str(SLEEP_MS))
               .replace('__FRAME_MS__', str(FRAME_MS))
