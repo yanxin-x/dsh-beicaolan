@@ -11,10 +11,10 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-const BUILD_VERSION = '20261122-184014';
+const BUILD_VERSION = '20261122-185258';
 const PORT_CANDIDATES = [43717, 43718, 43719, 43720];
 const PORT = PORT_CANDIDATES[0];
-const DEFAULTS = {"displayHeight": 83, "embedHeight": 180, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season"}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": -6, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}};
+const DEFAULTS = {"displayHeight": 83, "embedHeight": 180, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season"}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "typingFrameMs": 220, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": -6, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true, "say": {"gapX": 0.05, "gapY": 0.08, "maxW": 1.12, "offsetY": 0.3}, "think": {"x": 0.6, "y": 0.02, "size": 0.3}, "sleepBubble": {"x": 0.84, "y": 0.26, "size": 0.24}}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}};
 const CONFIG_DIR = path.join(os.homedir(), '.dsh', 'dsh-sitter');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 const REMINDER_FILE = path.join(CONFIG_DIR, 'reminders.json');
@@ -98,17 +98,34 @@ function newestSessionFile(root) {
   return best;
 }
 
-function readTailEvents(file) {
+function readTailEvents(file, bytes = TAIL_BYTES) {
   const fd = fs.openSync(file, 'r');
   try {
     const size = fs.fstatSync(fd).size;
-    const start = Math.max(0, size - TAIL_BYTES);
+    const start = Math.max(0, size - bytes);
     const buf = Buffer.alloc(size - start);
     fs.readSync(fd, buf, 0, buf.length, start);
     return parseEvents(decodeFrames(buf));
   } finally {
     fs.closeSync(fd);
   }
+}
+
+/**
+ * 找「最近一次 turn/start」不能只看固定尾巴。
+ * 一个 turn 里工具调用一多，turn/start 就落到 512KB 之外，于是 phase 永远 idle，
+ * 宠物不会跟着干活。这里按需把窗口放大：512KB → 2MB → 8MB，找到就停。
+ */
+function readTailEventsWithTurn(file) {
+  let events = [];
+  for (const bytes of [TAIL_BYTES, 2 * 1024 * 1024, 8 * 1024 * 1024]) {
+    events = readTailEvents(file, bytes);
+    if (events.some((ev) => ev && ev.type === 'turn/start')) return events;
+    try {
+      if (fs.statSync(file).size <= bytes) break;   // 文件本来就这么小，再大也没用
+    } catch { break; }
+  }
+  return events;
 }
 
 function lastCallConfig(events) {
@@ -144,7 +161,7 @@ function computeState() {
   if (!file) return { phase: 'idle', reason: 'no-session', updatedAt: Date.now() };
 
   let events;
-  try { events = readTailEvents(file); } catch { return { phase: 'idle', reason: 'read-failed', updatedAt: Date.now() }; }
+  try { events = readTailEventsWithTurn(file); } catch { return { phase: 'idle', reason: 'read-failed', updatedAt: Date.now() }; }
 
   let last = null;
   let lastErrorAt = 0;

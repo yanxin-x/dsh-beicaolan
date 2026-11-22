@@ -59,6 +59,17 @@ window.__ModuleLoader__.load({
       freeTop: DEFAULTS.layout?.freeTop ?? null,
       nightFrom: DEFAULTS.night?.from ?? 23,
       nightTo: DEFAULTS.night?.to ?? 7,
+      // 布局：四个主要元素的位置全在这里，改位置不用翻 CSS
+      sayRight: DEFAULTS.layout?.say?.right ?? 0.32,
+      sayGapY: DEFAULTS.layout?.say?.gapY ?? 0.07,
+      sayMaxW: DEFAULTS.layout?.say?.maxW ?? 1.12,
+      thinkX: DEFAULTS.layout?.think?.x ?? 0.56,
+      thinkY: DEFAULTS.layout?.think?.y ?? -0.02,
+      thinkSize: DEFAULTS.layout?.think?.size ?? 0.22,
+      sleepRight: DEFAULTS.layout?.sleepBubble?.right ?? -0.03,
+      sleepTop: DEFAULTS.layout?.sleepBubble?.top ?? 0.39,
+      sleepSize: DEFAULTS.layout?.sleepBubble?.size ?? 0.17,
+      typingFrameMs: DEFAULTS.timeline?.typingFrameMs ?? 220,
     };
 
     function applyConfig(c) {
@@ -112,6 +123,16 @@ window.__ModuleLoader__.load({
         freeTop: c.layout?.freeTop ?? null,
         nightFrom: c.night?.from ?? RT.nightFrom,
         nightTo: c.night?.to ?? RT.nightTo,
+        sayRight: c.layout?.say?.right ?? RT.sayRight,
+        sayGapY: c.layout?.say?.gapY ?? RT.sayGapY,
+        sayMaxW: c.layout?.say?.maxW ?? RT.sayMaxW,
+        thinkX: c.layout?.think?.x ?? RT.thinkX,
+        thinkY: c.layout?.think?.y ?? RT.thinkY,
+        thinkSize: c.layout?.think?.size ?? RT.thinkSize,
+        sleepRight: c.layout?.sleepBubble?.right ?? RT.sleepRight,
+        sleepTop: c.layout?.sleepBubble?.top ?? RT.sleepTop,
+        sleepSize: c.layout?.sleepBubble?.size ?? RT.sleepSize,
+        typingFrameMs: c.timeline?.typingFrameMs ?? RT.typingFrameMs,
       });
     }
 
@@ -262,56 +283,138 @@ window.__ModuleLoader__.load({
       return 's0';
     }
 
-    /** pose: idle | blink | typing */
+    /**
+     * 形态 + 姿势 → 精灵 key。只做决策、不碰 URL：
+     * 这样"打字第二帧"可以统一在最后追加，不用改每一条回退链。
+     * 回退顺序：优先不戴奶嘴版 → 再退回带奶嘴版（绝不让奶嘴凭空出现）。
+     * 姿势：idle | blink | typing（第一帧）| typingB（第二帧，key 后缀 _f2，构建期派生）
+     */
     const SKIN_IDS = ['caveman', 'muscle', 'wolf', 'fox', 'cat', 'bear', 'genderbend', 'ultra', 'snake', 'dragon', 'whale', 'qipao'];
 
-    function formSprite(form, pose) {
-      // 不戴奶嘴：季节装/睡衣有专门的立绘（皮肤暂不支持）
-      // 不戴奶嘴：按 pose 逐级回退，绝不再退回带奶嘴的图
-      if (RT.pacifier === false) {
-        const isSkin = typeof form === 'string' && form.indexOf('skin:') === 0;
-        const baseId = isSkin ? form.slice(5) : form;
-        const chain = [];
-        const tb2 = (pose === 'typingblink' || pose === 'blinktyping');
-        if (tb2) {
-          chain.push('nopac_typingblink_' + baseId);
-          chain.push('typingblink_' + baseId);
-        }
-        if (pose === 'typing' || tb2) {
-          chain.push('nopac_typing_' + baseId);
-          chain.push('typing_' + baseId);
-        }
-        if (pose === 'blink') {
-          chain.push('nopac_blink_' + baseId);
-          chain.push('blink_' + baseId);
-        }
-        chain.push(isSkin ? 'nopac_' + baseId : (form === 'pajama' ? 'nopac_pajama' : 'nopac_s' + String(form).slice(1)));
-        for (const k of chain) {
-          if (SPRITES[k]) return SPRITES[k];
-        }
-      }
-      if (typeof form === 'string' && form.indexOf('skin:') === 0) {
-        const id = form.slice(5);
-        // 皮肤也支持姿势：typingblink → typing → blink → 静态
-        const chain = [];
-        const tb = (pose === 'typingblink' || pose === 'blinktyping');
-        if (tb) chain.push('typingblink_' + id);
-        if (pose === 'typing' || tb) chain.push('typing_' + id);
-        if (pose === 'blink') chain.push('blink_' + id);
-        chain.push('skin_' + id);
-        for (const k of chain) {
-          if (SPRITES[k]) return SPRITES[k];
-        }
-        return SPRITES['idle0'];
-      }
+    function formSpriteKey(form, pose) {
+      const noPac = RT.pacifier === false;
+      const isTyping = pose === 'typing' || pose === 'typingB';
+      const isSkin = typeof form === 'string' && form.indexOf('skin:') === 0;
+      const baseId = isSkin ? form.slice(5) : form;
+      const chain = [];
+
+      // 睡衣：不戴奶嘴版只有一张静态图，带姿势的只有带奶嘴版（沿用原来的兜底）
       if (form === 'pajama') {
-        const k = pose === 'typing' ? 'pajama2' : pose === 'blink' ? 'pajama1' : 'pajama0';
-        return SPRITES[k];
+        const k = isTyping ? 'pajama2' : pose === 'blink' ? 'pajama1' : 'pajama0';
+        for (const c of (noPac ? ['nopac_' + k, k, 'nopac_pajama'] : [k])) {
+          if (SPRITES[c]) return c;
+        }
+        return noPac ? 'nopac_pajama' : 'pajama0';
       }
-      const idx = form.slice(1);
-      if (pose === 'typing') return SPRITES['typing' + idx];
-      if (pose === 'blink') return SPRITES['blink' + idx];
-      return SPRITES['idle' + idx];
+
+      if (noPac) {
+        if (isTyping) chain.push('nopac_typing_' + baseId, 'typing_' + baseId);
+        if (pose === 'blink') chain.push('nopac_blink_' + baseId, 'blink_' + baseId);
+        chain.push(isSkin ? 'nopac_' + baseId : 'nopac_s' + String(form).slice(1));
+      }
+      if (isSkin) {
+        if (isTyping) chain.push('typing_' + baseId);
+        if (pose === 'blink') chain.push('blink_' + baseId);
+        chain.push('skin_' + baseId);
+      } else {
+        const idx = String(form).slice(1);
+        chain.push((isTyping ? 'typing' : pose === 'blink' ? 'blink' : 'idle') + idx);
+      }
+      for (const k of chain) {
+        if (SPRITES[k]) return k;
+      }
+      return 'idle0';
+    }
+
+    /** typingB 取构建期派生的 <key>_f2；没有就退回第一帧，绝不会变成空白 */
+    function formSprite(form, pose) {
+      let key = formSpriteKey(form, pose);
+      if (pose === 'typingB' && SPRITES[key + '_f2']) key += '_f2';
+      return SPRITES[key] || SPRITES.idle0;
+    }
+
+    /**
+     * 四个主要元素的像素盒子 —— 全部由宠物尺寸推导，只此一处。
+     *   金砖   ← 以"屁股"为锚（seat.buttRatio），垫在输入框上沿
+     *   台词框 ← 宠物左上方向外展开，不压住脸
+     *   思考云 ← 头顶偏右，尾巴朝下
+     *   呼噜泡 ← 睡觉时头顶右上
+     * CSS 里不再写死位置，改布局只动这里和 config.default.json 的 layout.*
+     */
+    function LAY() {
+      const g = G();
+      const w = g.w;
+      const h = g.h;
+      return {
+        pet: { w, h },
+        brick: { w: g.brickW, h: g.brickH, bottom: g.brickBottom },
+        say: {
+          right: Math.round(w * RT.sayRight),
+          bottom: Math.round(h + h * RT.sayGapY),
+          maxWidth: Math.round(w * RT.sayMaxW),
+        },
+        think: {
+          left: Math.round(w * RT.thinkX),
+          top: Math.round(h * RT.thinkY),
+          size: Math.round(w * RT.thinkSize),
+        },
+        sleep: {
+          right: Math.round(w * RT.sleepRight),
+          top: Math.round(h * RT.sleepTop),
+          size: Math.round(w * RT.sleepSize),
+        },
+      };
+    }
+
+    // ───────── 四个主要元素：位置全部来自 LAY()，自己不再持有几何 ─────────
+    function SeatBrick({ lay }) {
+      return h('div', {
+        className: 'dsh-sitter-brick',
+        style: {
+          backgroundImage: 'url("' + SPRITES.brick + '")',
+          width: lay.brick.w + 'px',
+          height: lay.brick.h + 'px',
+          bottom: lay.brick.bottom + 'px',
+        },
+      });
+    }
+
+    function SayBubble({ text, lay }) {
+      if (!text) return null;
+      return h('div', {
+        className: 'dsh-sitter-say',
+        style: {
+          right: lay.say.right + 'px',
+          bottom: lay.say.bottom + 'px',
+          maxWidth: lay.say.maxWidth + 'px',
+        },
+      }, text);
+    }
+
+    function ThinkBubble({ lay }) {
+      return h('div', {
+        className: 'dsh-sitter-think',
+        style: {
+          left: lay.think.left + 'px',
+          top: lay.think.top + 'px',
+          width: lay.think.size + 'px',
+          height: lay.think.size + 'px',
+          backgroundImage: 'url("' + SPRITES.think + '")',
+        },
+      });
+    }
+
+    function SleepBubble({ lay }) {
+      return h('div', {
+        className: 'dsh-sitter-bubble',
+        style: {
+          right: lay.sleep.right + 'px',
+          top: lay.sleep.top + 'px',
+          width: lay.sleep.size + 'px',
+          height: lay.sleep.size + 'px',
+          backgroundImage: 'url("' + SPRITES.bubble + '")',
+        },
+      });
     }
 
     // 只有目标是卫衣时条带才播完整 8 格（最后一格就是卫衣）；
@@ -391,14 +494,6 @@ window.__ModuleLoader__.load({
 .dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:first-child { transform: translateY(0); }
 .dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:last-child { transform: translateY(0); }
 .dsh-sitter-wrap[data-snapping='1'] { transition: left 180ms ease-out, top 180ms ease-out; }
-/* 忙碌时的“手轻轻上下”：素材只有一帧，用 CSS 做 1.5px 起伏，60fps 绝对平滑 */
-@keyframes dshBusyBob {
-  0%, 100% { transform: translateY(0); }
-  50%      { transform: translateY(-1.5px); }
-}
-.dsh-sitter-wrap[data-working='1'] .dsh-sitter-img {
-  animation: dshBusyBob 950ms ease-in-out infinite;
-}
 .dsh-sitter-wrap[data-drag='1'] .dsh-sitter-brick { opacity: 0; }
 .dsh-sitter-wrap[data-drag='1'] {
   animation: none !important;
@@ -680,13 +775,8 @@ window.__ModuleLoader__.load({
 .dsh-sitter-wrap[data-state='idle'] .dsh-sitter-brick {
   display: block;
 }
-.dsh-sitter-wrap[data-working='1'] .dsh-sitter-img {
-  animation: dshSitterTypeBounce 260ms steps(2) infinite;
-}
-@keyframes dshSitterTypeBounce {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-1px); }
-}
+/* 打字时只让两帧图自己动：呼吸的 translateY 和两帧位移会互相抵消，看起来像没动 */
+.dsh-sitter-img[data-working='1'] { animation: none; }
 .dsh-sitter-dbg {
   position: absolute;
   right: 0;
@@ -711,18 +801,12 @@ window.__ModuleLoader__.load({
       if (!cb) return;
       const cbr = cb.getBoundingClientRect();
       const ir = input.getBoundingClientRect();
-      const extraX = (RT.panelMarginX || 40) - 40;
-      const extraY = (RT.panelMarginY || 80) - 80;
-      if (false && RT.panelSide === 'left') {
-        const leftOffset = Math.round(ir.left - cbr.left) + extraX;
-        node.style.left = leftOffset + 'px';
-        node.style.right = 'auto';
-      } else {
-        const rightOffset = Math.round(cbr.right - ir.right) + RT.seatInset + extraX;
-        node.style.right = rightOffset + 'px';
-        node.style.left = 'auto';
-      }
-      let lift = INITIAL_LIFT + extraY;
+      // 位置只由 seatInset 决定。dsh-pet 面板里的 corner / margin 属于桌面透明窗那套，
+      // 不该影响页面内挂件的贴边 —— 之前它们串进来，导致"同样的 seatInset 位置却不一样"。
+      const rightOffset = Math.round(cbr.right - ir.right) + RT.seatInset;
+      node.style.right = rightOffset + 'px';
+      node.style.left = 'auto';
+      let lift = INITIAL_LIFT;
       node.style.setProperty('--dsh-sitter-lift', lift + 'px');
       let gap = node.getBoundingClientRect().bottom - ir.top;
       for (let i = 0; i < 3 && Math.abs(gap) > 1; i += 1) {
@@ -2033,8 +2117,13 @@ window.__ModuleLoader__.load({
         };
       } else if (state === 'idle') {
         const form = currentForm();
+        // 打字两帧：按 typingFrameMs 交替。第二帧是构建期从第一帧派生的 _f2，
+        // 所以每套皮肤/每个季节都自动有同一节奏的"手在敲"，不用逐张出图。
+        const tFrame = RT.typingFrameMs > 0
+          ? Math.floor((now - LOADED_AT) / RT.typingFrameMs) % 2
+          : 0;
         const pose = workingNow
-          ? (blinking && form !== 'pajama' ? 'blinktyping' : 'typing')
+          ? (tFrame ? 'typingB' : 'typing')
           : (blinking ? 'blink' : 'idle');
         const src = spriteFor(dragging || ultra, form, pose);
         imgStyle = { backgroundImage: 'url("' + src + '")' };
@@ -2043,6 +2132,7 @@ window.__ModuleLoader__.load({
       }
 
       stateRef.current = state;
+      const lay = LAY();
 
       // owner 心跳已移到 effect（渲染期 setState 会让两个实例互相判死 → 宠物消失）
       if (dead) return null;
@@ -2074,10 +2164,7 @@ window.__ModuleLoader__.load({
           'aria-hidden': true,
         },
         h('style', null, CSS),
-        h('div', {
-          className: 'dsh-sitter-brick',
-          style: { backgroundImage: 'url("' + SPRITES.brick + '")' },
-        }),
+        h(SeatBrick, { lay }),
         h('div', { className: 'dsh-sitter-curtain', 'aria-hidden': true },
           h('span', null),
           h('span', null)),
@@ -2118,16 +2205,9 @@ window.__ModuleLoader__.load({
               stats && stats.coins ? String(stats.coins.balance) : '—'),
           ),
         ),
-        say ? h('div', { className: 'dsh-sitter-say' }, say) : null,
-
-        h('div', {
-          className: 'dsh-sitter-think',
-          style: { backgroundImage: 'url("' + SPRITES.think + '")' },
-        }),
-        h('div', {
-          className: 'dsh-sitter-bubble',
-          style: { backgroundImage: 'url("' + SPRITES.bubble + '")' },
-        }),
+        h(SayBubble, { text: say, lay }),
+        h(ThinkBubble, { lay }),
+        h(SleepBubble, { lay }),
         DEBUG ? h('div', { className: 'dsh-sitter-dbg' }, dbg + ' >> ' + CTX_KEYS) : null,
       );
     }

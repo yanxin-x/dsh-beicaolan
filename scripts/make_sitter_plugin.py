@@ -278,6 +278,25 @@ INDEX = (PET / 'host.template.js').read_text(encoding='utf-8')
 # 换装 / 切奶嘴 / 换姿势时几何完全一致，不会缩放跳变、不会边缘残留。
 PET_CANVAS_W = 300
 
+# 「打字第二帧」的下移量（贴完画布后的像素，画布高 EMBED_H=180）。
+# 显示高度 83px 时约 1.8px —— 2px 在 83px 下只有 0.9px，肉眼几乎看不出来，所以取 4。
+TYPING_FRAME_PX = 4
+
+
+def _is_typing_key(key: str) -> bool:
+    """哪些贴图需要派生第二帧：所有打字姿势，**包括 nopac_ 前缀那一半**。
+
+    历史遗留的 `typingblink_*` 语义混乱（四季是真闭眼、部分皮肤是复制帧、部分是位移帧），
+    所以不再复用它当第二帧，改由构建期统一派生 `<key>_f2`。
+    """
+    if key.endswith('_f2'):
+        return False
+    if 'typingblink' in key:
+        return False
+    if key == 'pajama2':                      # 睡衣的打字姿势
+        return True
+    return key.startswith('typing') or key.startswith('nopac_typing')
+
 
 TOP_MARGIN = 0          # 画布顶部留 2px 透明边（发尖不再贴画布边缘）
 TOP_FRINGE_ROWS = 3
@@ -383,8 +402,12 @@ def _flatten_hair_top(img):
     return img
 
 
-def embed(path: Path, height: int):
-    """加载素材，缩放到目标高度后统一贴到同一画布（底部居中），再转 base64。"""
+def embed(path: Path, height: int, dy: int = 0):
+    """加载素材，缩放到目标高度后统一贴到同一画布（底部居中），再转 base64。
+
+    dy > 0 时把整张画布下移 dy 像素、底部裁掉——用于派生「打字第二帧」。
+    同一张图位移出来的两帧不会抖，比 AI 各出一帧稳得多（见 make_frame2_shift.py 的历史说明）。
+    """
     img = Image.open(path).convert('RGBA')
     if img.height != height:
         w = max(1, round(img.width * height / img.height))
@@ -397,6 +420,10 @@ def embed(path: Path, height: int):
             x = 0
         canvas.alpha_composite(img, (x, TOP_MARGIN))
         img = canvas
+    if dy:
+        shifted = Image.new('RGBA', img.size, (0, 0, 0, 0))
+        shifted.alpha_composite(img.crop((0, 0, img.width, img.height - dy)), (0, dy))
+        img = shifted
 
     buf = io.BytesIO()
     img.save(buf, format='PNG', optimize=True)
@@ -442,6 +469,20 @@ def main() -> int:
         print(f'  {key}: {w}x{h} -> {len(b64) // 1024} KB')
 
     disp_w = round(DISPLAY_H * max_ratio)
+
+    # ---- 派生「打字第二帧」：所有打字姿势统一加一个 <key>_f2（整张下移 TYPING_FRAME_PX）----
+    # 这样每套皮肤/每个季节都自动拥有同一套两帧动画，不用逐张出图，也不会因为
+    # 素材来源不同而"有的在眨眼、有的在位移"。
+    frame2_src = [k for k in encoded if _is_typing_key(k)]
+    for key in frame2_src:
+        path, height = SPRITES[key]
+        try:
+            b64, _w, _h = embed(path, height, dy=TYPING_FRAME_PX)
+            encoded[key + '_f2'] = f'data:image/png;base64,{b64}'
+        except Exception as e:
+            print(f'[warn] 第二帧生成失败 {key}: {e}')
+    print(f'  两帧动画：为 {len(frame2_src)} 个打字姿势派生了 _f2 帧（下移 {TYPING_FRAME_PX}px）')
+
     defaults_json = json.dumps(CFG, ensure_ascii=False)
 
     client = (CLIENT

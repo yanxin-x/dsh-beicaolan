@@ -98,17 +98,34 @@ function newestSessionFile(root) {
   return best;
 }
 
-function readTailEvents(file) {
+function readTailEvents(file, bytes = TAIL_BYTES) {
   const fd = fs.openSync(file, 'r');
   try {
     const size = fs.fstatSync(fd).size;
-    const start = Math.max(0, size - TAIL_BYTES);
+    const start = Math.max(0, size - bytes);
     const buf = Buffer.alloc(size - start);
     fs.readSync(fd, buf, 0, buf.length, start);
     return parseEvents(decodeFrames(buf));
   } finally {
     fs.closeSync(fd);
   }
+}
+
+/**
+ * 找「最近一次 turn/start」不能只看固定尾巴。
+ * 一个 turn 里工具调用一多，turn/start 就落到 512KB 之外，于是 phase 永远 idle，
+ * 宠物不会跟着干活。这里按需把窗口放大：512KB → 2MB → 8MB，找到就停。
+ */
+function readTailEventsWithTurn(file) {
+  let events = [];
+  for (const bytes of [TAIL_BYTES, 2 * 1024 * 1024, 8 * 1024 * 1024]) {
+    events = readTailEvents(file, bytes);
+    if (events.some((ev) => ev && ev.type === 'turn/start')) return events;
+    try {
+      if (fs.statSync(file).size <= bytes) break;   // 文件本来就这么小，再大也没用
+    } catch { break; }
+  }
+  return events;
 }
 
 function lastCallConfig(events) {
@@ -144,7 +161,7 @@ function computeState() {
   if (!file) return { phase: 'idle', reason: 'no-session', updatedAt: Date.now() };
 
   let events;
-  try { events = readTailEvents(file); } catch { return { phase: 'idle', reason: 'read-failed', updatedAt: Date.now() }; }
+  try { events = readTailEventsWithTurn(file); } catch { return { phase: 'idle', reason: 'read-failed', updatedAt: Date.now() }; }
 
   let last = null;
   let lastErrorAt = 0;
