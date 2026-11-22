@@ -1,0 +1,7 @@
+{
+  "meta": {
+    "title": "Beicaolan desktop companion",
+    "description": "A pixel companion that sits on the composer: types along with you, nudges you to rest, dresses by season and at night, and tracks today's usage. Zero tokens, fully local. Requires the DSH desktop web page.",
+    "detail": "docs/DETAIL.md"
+  }
+}

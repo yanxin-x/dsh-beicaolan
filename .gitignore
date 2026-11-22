@@ -1,0 +1,45 @@
+# ─────────────────────────────────────────────────────────
+#  dsh-beicaolan（贝草兰桌宠）
+#
+#  仓库里只放两类东西：
+#    ① 重建不出来的：源码、文档、插件包、构建真正读到的 152 个素材
+#    ② 插件包本身（dsh-sitter/）—— 用户从 git 安装它，必须入库
+#  其余全部忽略，留在本地当底稿。
+# ─────────────────────────────────────────────────────────
+
+# ── 素材底稿：152 个构建输入已复制到 assets/，这些是历史稿 ──
+/10_base/
+/20_face/
+/30_clothes/
+/35_acc/
+/40_actions/
+/40_compose/
+/50_anim/
+/00_ref/
+/rig/
+
+# ── 构建与分发产物 ──
+/60_build/
+/70_dist/
+
+# ── 脚本：只保留 sitter 现在真正用的 5 个，其余是一次性补丁 / 桌面窗时代遗留 ──
+/scripts/*.py
+!/scripts/make_sitter_plugin.py
+/scripts/*.mjs
+!/scripts/pet-cli.mjs
+!/scripts/check_client.mjs
+!/scripts/preflight.mjs
+!/scripts/test_cmd_channel.mjs
+/scripts/*.ps1
+/scripts/pet/experiments/
+/scripts/_archive/
+/scripts/__pycache__/
+
+# ── 杂物 ──
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+desktop.ini
+*.log
+/.tmp/

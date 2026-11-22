@@ -1,0 +1,2152 @@
+/**
+ * 坐在输入框上的小宠物：睡 -> 试衣间换装 -> 待机。
+ * @module @local/dsh-sitter/client
+ */
+window.__ModuleLoader__.load({
+  id: '@local/dsh-sitter',
+  factory(require) {
+    const React = require('react');
+    let createPortal = null;
+    try { createPortal = require('react-dom').createPortal; } catch (e) { createPortal = null; }
+    const h = React.createElement;
+    const SPRITES = __SPRITES__;
+    const DEFAULTS = __CONFIG_DEFAULTS__;
+
+    // 运行时可改的参数：初始值来自构建时的默认配置，之后由宿主 /config 覆盖
+    const RT = {
+      displayHeight: DEFAULTS.displayHeight,
+      sleepMs: DEFAULTS.timeline.sleepMs,
+      frameMs: DEFAULTS.timeline.frameMs,
+      blinkMs: DEFAULTS.timeline.blinkMs,
+      blinkMinGapMs: DEFAULTS.timeline.blinkMinGapMs,
+      blinkMaxGapMs: DEFAULTS.timeline.blinkMaxGapMs,
+      typingHoldMs: DEFAULTS.timeline.typingHoldMs,
+      workHoldMs: DEFAULTS.timeline.workHoldMs,
+      dozeMs: DEFAULTS.timeline.dozeMs,
+      seatInset: DEFAULTS.layout.seatInset,
+      topPad: DEFAULTS.layout.topPad,
+      brickH: DEFAULTS.brick.height,
+      brickOverlap: DEFAULTS.brick.overlap,
+      brickSink: DEFAULTS.brick.sink,
+      buttRatio: DEFAULTS.seat.buttRatio,
+      blink: DEFAULTS.features.blink,
+      typing: DEFAULTS.features.typing,
+      workLink: DEFAULTS.features.workLink,
+      hoverCard: DEFAULTS.features.hoverCard,
+      think: DEFAULTS.features.think,
+      outfits: DEFAULTS.features.outfits,
+      escalateEnabled: DEFAULTS.escalate?.enabled ?? true,
+      escalateIdleMs: DEFAULTS.escalate?.idleMs ?? 180000,
+      escalateStepMs: DEFAULTS.escalate?.stepMs ?? 10000,
+      breakWorkMs: DEFAULTS.break?.workMs ?? 2400000,
+      breakRunMs: DEFAULTS.break?.runMs ?? 7000,
+      breakRounds: DEFAULTS.break?.rounds ?? 3,
+      breakText: DEFAULTS.break?.text ?? '小宝贝，歇一会儿眼睛吧～',
+      pacifier: DEFAULTS.features?.pacifier !== false,
+      chatEnabled: DEFAULTS.chat?.enabled ?? true,
+      chatIntervalMs: DEFAULTS.chat?.intervalMs ?? 75000,
+      chatDurationMs: DEFAULTS.chat?.durationMs ?? 4500,
+      chatQuietFrom: DEFAULTS.chat?.quietFrom ?? 1,
+      chatQuietTo: DEFAULTS.chat?.quietTo ?? 7,
+      outfitForce: DEFAULTS.outfits?.force ?? null,
+      seasonMode: DEFAULTS.outfits?.seasonMode ?? 'season',
+      panelSide: DEFAULTS.panel?.corner === 'bottom-left' ? 'left' : 'right',
+      panelMarginX: DEFAULTS.panel?.marginX ?? 40,
+      panelMarginY: DEFAULTS.panel?.marginY ?? 80,
+      panelFixed: !!DEFAULTS.panel?.fixed,
+      dragEnabled: !!DEFAULTS.layout?.dragEnabled,
+      freeLeft: DEFAULTS.layout?.freeLeft ?? null,
+      freeTop: DEFAULTS.layout?.freeTop ?? null,
+      nightFrom: DEFAULTS.night?.from ?? 23,
+      nightTo: DEFAULTS.night?.to ?? 7,
+    };
+
+    function applyConfig(c) {
+      if (!c) return;
+      RT.displayHeight = c.displayHeight ?? RT.displayHeight;
+      Object.assign(RT, {
+        sleepMs: c.timeline?.sleepMs ?? RT.sleepMs,
+        frameMs: c.timeline?.frameMs ?? RT.frameMs,
+        blinkMs: c.timeline?.blinkMs ?? RT.blinkMs,
+        blinkMinGapMs: c.timeline?.blinkMinGapMs ?? RT.blinkMinGapMs,
+        blinkMaxGapMs: c.timeline?.blinkMaxGapMs ?? RT.blinkMaxGapMs,
+        typingHoldMs: c.timeline?.typingHoldMs ?? RT.typingHoldMs,
+        workHoldMs: c.timeline?.workHoldMs ?? RT.workHoldMs,
+        dozeMs: c.timeline?.dozeMs ?? RT.dozeMs,
+        seatInset: c.layout?.seatInset ?? RT.seatInset,
+        topPad: c.layout?.topPad ?? RT.topPad,
+        brickH: c.brick?.height ?? RT.brickH,
+        brickOverlap: c.brick?.overlap ?? RT.brickOverlap,
+        brickSink: c.brick?.sink ?? RT.brickSink,
+        buttRatio: c.seat?.buttRatio ?? RT.buttRatio,
+      });
+      Object.assign(RT, {
+        blink: c.features?.blink ?? RT.blink,
+        typing: c.features?.typing ?? RT.typing,
+        workLink: c.features?.workLink ?? RT.workLink,
+        hoverCard: c.features?.hoverCard ?? RT.hoverCard,
+        think: c.features?.think ?? RT.think,
+        outfits: c.features?.outfits ?? RT.outfits,
+        escalateEnabled: c.escalate?.enabled ?? RT.escalateEnabled,
+        escalateIdleMs: c.escalate?.idleMs ?? RT.escalateIdleMs,
+        escalateStepMs: c.escalate?.stepMs ?? RT.escalateStepMs,
+        breakWorkMs: c.break?.workMs ?? RT.breakWorkMs,
+        breakRunMs: c.break?.runMs ?? RT.breakRunMs,
+        breakRounds: c.break?.rounds ?? RT.breakRounds,
+        breakText: c.break?.text ?? RT.breakText,
+        pacifier: c.features?.pacifier ?? RT.pacifier,
+        chatEnabled: (c.chat?.enabled ?? RT.chatEnabled) && (c.panel ? c.panel.whisper !== false : true),
+        workLink: c.features?.workLink ?? (c.panel ? c.panel.workLink !== false : RT.workLink),
+        chatIntervalMs: c.chat?.intervalMs ?? RT.chatIntervalMs,
+        chatDurationMs: c.chat?.durationMs ?? RT.chatDurationMs,
+        chatQuietFrom: c.chat?.quietFrom ?? RT.chatQuietFrom,
+        chatQuietTo: c.chat?.quietTo ?? RT.chatQuietTo,
+        outfitForce: c.outfits?.force ?? null,
+        seasonMode: c.outfits?.seasonMode ?? RT.seasonMode,
+        panelSide: c.panel?.corner === 'bottom-left' ? 'left' : 'right',
+        panelMarginX: c.panel?.marginX ?? RT.panelMarginX,
+        panelMarginY: c.panel?.marginY ?? RT.panelMarginY,
+        panelFixed: !!c.panel?.fixed,
+        dragEnabled: c.layout?.dragEnabled ?? RT.dragEnabled,
+        freeLeft: c.layout?.freeLeft ?? null,
+        freeTop: c.layout?.freeTop ?? null,
+        nightFrom: c.night?.from ?? RT.nightFrom,
+        nightTo: c.night?.to ?? RT.nightTo,
+      });
+    }
+
+    const COLS = __COLS__;
+    const CELL_RATIO = __CELL_RATIO__;
+    const INITIAL_LIFT = __LIFT__;
+    const DEBUG = __DEBUG__;
+    // 台词池：不调用模型，零 token；按时段/状态挑，尽量不重复
+    const LINES = {
+      work: [
+        '小宝贝专心，我在呢',
+        '别急，慢慢来',
+        '这段写得真好',
+        '累了就靠一下',
+        '小宝宝加油',
+      ],
+      idle: [
+        '小宝贝，喝口水吧',
+        'honey，歇一下眼睛',
+        '我一直在这儿',
+        '想你了',
+        '写累了就伸个懒腰',
+      ],
+      night: [
+        '小宝贝，早点睡',
+        '再写十分钟就休息好不好',
+        '困了就去睡，我守着',
+        '晚安，做个好梦',
+      ],
+      morning: [
+        '早上好呀小宝贝',
+        '新的一天，慢慢来',
+        '早安 honey，今天也会顺顺利利的',
+      ],
+      noon: [
+        '小宝宝吃饭了没',
+        '中午眯十分钟吧',
+        '记得喝水呀',
+      ],
+    };
+
+    // 按最近一条用户消息挑台词（零 token）
+    const CONTEXT_RULES = [
+      { re: /生图|画图|出图|配图|立绘|画.{0,2}[张只幅]|画一/i, lines: ['又要画图啦，真厉害', '小宝贝画的都好看'] },
+      { re: /报错|错误|失败|崩|error|exception|traceback/i, lines: ['别急，我陪你想', '不是你的错，慢慢来'] },
+      { re: /论文|文献|引用|摘要|实验|数据|统计/i, lines: ['写得真好，慢慢来', '这段逻辑很清楚'] },
+      { re: /Stata|回归|do文件|面板数据|内生性/i, lines: ['跑这么久，先歇会儿', '小宝宝辛苦了'] },
+      { re: /插件|代码|函数|接口|重构|bug/i, lines: ['小宝贝写得真快', '这段要不要抽成函数'] },
+      { re: /桌宠|宠物|贝草兰/i, lines: ['在说我吗，嘿嘿', '我一直都在呀'] },
+      { re: /困|累|睡|休息|熬夜/i, lines: ['去睡吧，我守着', '别熬坏了，心疼'] },
+    ];
+
+    function pickContextLine(text) {
+      if (!text) return null;
+      for (const rule of CONTEXT_RULES) {
+        if (rule.re.test(text)) {
+          return rule.lines[Math.floor(Math.random() * rule.lines.length)];
+        }
+      }
+      return null;
+    }
+
+    function pickLine(prev) {
+      const h = new Date().getHours();
+      let pool;
+      if (h >= RT.chatQuietFrom && h < RT.chatQuietTo) return null;
+      if (h >= 23 || h < 2) pool = LINES.night;
+      else if (h < 11) pool = LINES.morning;
+      else if (h < 14) pool = LINES.noon;
+      else pool = LINES.idle;
+      const all = pool.concat(LINES.idle, LINES.work);
+      let text = all[Math.floor(Math.random() * all.length)];
+      for (let i = 0; i < 4 && text === prev; i += 1) {
+        text = all[Math.floor(Math.random() * all.length)];
+      }
+      return text;
+    }
+
+    const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'fitting', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
+    const OUTFIT_COUNT = __OUTFIT_COUNT__;
+    const HOODIE_INDEX = __HOODIE_INDEX__;
+
+    // 由 RT 推导的几何量
+    function G() {
+      const h = RT.displayHeight;
+      const ref = DEFAULTS.displayHeight;
+      const k = h / ref;                       // 相对默认尺寸的缩放
+      const brickH = Math.round(RT.brickH * k);
+      const overlap = Math.round(RT.brickOverlap * k);
+      const sink = Math.round(RT.brickSink * k);
+      const butt = Math.round(h * RT.buttRatio);
+      const gap = overlap - brickH + sink + butt;
+      return {
+        h,
+        w: Math.round(h * __RATIO__),
+        topPad: Math.round(RT.topPad * k),
+        seatRise: -gap,
+        brickBottom: gap - overlap,
+        brickW: Math.round(h * 1.0),
+        brickH,
+      };
+    }
+    function geom() { return G(); }
+
+    /** 占满视口需要放大到第几级（2 的幂） */
+    /** 刚好占满视口所需的缩放倍数（contain：整只都看得见） */
+    function fullScaleOf() {
+      const g = G();
+      return Math.max(2, Math.min(window.innerWidth / g.w, window.innerHeight / g.h));
+    }
+
+    function fullStageOf() {
+      return Math.max(1, Math.ceil(Math.log2(fullScaleOf())));
+    }
+
+    // 每加载一次换下一套；存 localStorage，刷新也算一次唤醒
+    const OUTFIT_RAW = (() => {
+      try {
+        const prev = parseInt(localStorage.getItem('dsh-sitter-outfit') || '-1', 10);
+        const next = Number.isFinite(prev) ? (prev + 1) % OUTFIT_COUNT : 0;
+        localStorage.setItem('dsh-sitter-outfit', String(next));
+        return next;
+      } catch (e) {
+        return 0;
+      }
+    })();
+    let OUTFIT_INDEX = OUTFIT_RAW;
+
+    /** 当前该穿什么：手动（含皮肤） > 夜间睡衣 > 季节 */
+    function currentForm() {
+      const force = RT.outfitForce;
+      if (force === 'pajama') return 'pajama';
+      if (typeof force === 'string' && SKIN_IDS.includes(force)) return 'skin:' + force;
+      if (force !== null && force !== undefined && force !== '') {
+        const n = Number(force);
+        if (Number.isFinite(n)) return 's' + Math.max(0, Math.min(3, Math.round(n)));
+      }
+      const h = new Date().getHours();
+      const night = RT.nightFrom > RT.nightTo
+        ? (h >= RT.nightFrom || h < RT.nightTo)
+        : (h >= RT.nightFrom && h < RT.nightTo);
+      if (night) return 'pajama';
+      if (RT.seasonMode === 'rotate') return 's' + OUTFIT_RAW;
+      const m = new Date().getMonth() + 1;
+      if (m >= 3 && m <= 5) return 's2';
+      if (m >= 6 && m <= 8) return 's3';
+      if (m >= 9 && m <= 11) return 's1';
+      return 's0';
+    }
+
+    /** pose: idle | blink | typing */
+    const SKIN_IDS = ['caveman', 'muscle', 'wolf', 'fox', 'cat', 'bear', 'genderbend', 'ultra', 'snake', 'dragon', 'whale', 'qipao'];
+
+    function formSprite(form, pose) {
+      // 不戴奶嘴：季节装/睡衣有专门的立绘（皮肤暂不支持）
+      // 不戴奶嘴：按 pose 逐级回退，绝不再退回带奶嘴的图
+      if (RT.pacifier === false) {
+        const isSkin = typeof form === 'string' && form.indexOf('skin:') === 0;
+        const baseId = isSkin ? form.slice(5) : form;
+        const chain = [];
+        const tb2 = (pose === 'typingblink' || pose === 'blinktyping');
+        if (tb2) {
+          chain.push('nopac_typingblink_' + baseId);
+          chain.push('typingblink_' + baseId);
+        }
+        if (pose === 'typing' || tb2) {
+          chain.push('nopac_typing_' + baseId);
+          chain.push('typing_' + baseId);
+        }
+        if (pose === 'blink') {
+          chain.push('nopac_blink_' + baseId);
+          chain.push('blink_' + baseId);
+        }
+        chain.push(isSkin ? 'nopac_' + baseId : (form === 'pajama' ? 'nopac_pajama' : 'nopac_s' + String(form).slice(1)));
+        for (const k of chain) {
+          if (SPRITES[k]) return SPRITES[k];
+        }
+      }
+      if (typeof form === 'string' && form.indexOf('skin:') === 0) {
+        const id = form.slice(5);
+        // 皮肤也支持姿势：typingblink → typing → blink → 静态
+        const chain = [];
+        const tb = (pose === 'typingblink' || pose === 'blinktyping');
+        if (tb) chain.push('typingblink_' + id);
+        if (pose === 'typing' || tb) chain.push('typing_' + id);
+        if (pose === 'blink') chain.push('blink_' + id);
+        chain.push('skin_' + id);
+        for (const k of chain) {
+          if (SPRITES[k]) return SPRITES[k];
+        }
+        return SPRITES['idle0'];
+      }
+      if (form === 'pajama') {
+        const k = pose === 'typing' ? 'pajama2' : pose === 'blink' ? 'pajama1' : 'pajama0';
+        return SPRITES[k];
+      }
+      const idx = form.slice(1);
+      if (pose === 'typing') return SPRITES['typing' + idx];
+      if (pose === 'blink') return SPRITES['blink' + idx];
+      return SPRITES['idle' + idx];
+    }
+
+    // 只有目标是卫衣时条带才播完整 8 格（最后一格就是卫衣）；
+    // 其它衣服播到「帘子全闭」就切走，观众自然理解成在帘子后面换的。
+    const FIT_FRAMES = OUTFIT_INDEX === HOODIE_INDEX ? COLS : 6;
+    const FIT_MS = RT.frameMs * FIT_FRAMES;
+    const fmtTokens = (n) => {
+      if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
+      if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+      if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+      return String(n);
+    };
+    const fmtMins = (m) => (m >= 60 ? Math.floor(m / 60) + 'h ' + (m % 60) + 'm' : m + 'm');
+    
+            // 闭眼持续
+      // 停止输入多久算"打完字了"
+
+    const CSS = `
+@keyframes dshSitterBreath {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-1.2px) scaleY(1.012); }
+}
+@keyframes dshSitterBreathSleep {
+  0%   { transform: translateY(0) scale(1, 1); }
+  45%  { transform: translateY(-2px) scale(1.008, 1.035); }
+  55%  { transform: translateY(-1.8px) scale(1.008, 1.03); }
+  100% { transform: translateY(0) scale(1, 1); }
+}
+@keyframes dshSitterSway {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  35% { transform: translateX(-1px) rotate(-0.6deg); }
+  70% { transform: translateX(1px) rotate(0.5deg); }
+}
+@keyframes dshSitterBubble {
+  0%, 62%   { opacity: 0; transform: translateY(3px) scale(0.6); }
+  68%       { opacity: 0.95; transform: translateY(0) scale(0.9); }
+  82%       { opacity: 0.9; transform: translateY(-9px) scale(1); }
+  92%       { opacity: 0; transform: translateY(-15px) scale(1.05); }
+  100%      { opacity: 0; transform: translateY(3px) scale(0.6); }
+}
+:root {
+  --dsh-sitter-right: calc(max(var(--dsh-composer-side-clearance, 16px),
+    (100% - var(--dsh-composer-card-max-width, 100%)) / 2) + 8px);
+  --dsh-sitter-lift: ${INITIAL_LIFT}px;
+}
+.dsh-sitter-wrap {
+  position: absolute;
+  right: var(--dsh-sitter-right, 24px);
+  bottom: var(--dsh-sitter-lift, 26px);
+  height: calc(var(--pet-h) + var(--pet-toppad));
+  width: var(--pet-w);
+  pointer-events: none;
+  z-index: 2;
+  transform-origin: 50% 100%;
+  animation: dshSitterSway 11s ease-in-out infinite;
+  visibility: hidden;
+}
+.dsh-sitter-wrap[data-ready='1'] { visibility: visible; }
+.dsh-sitter-wrap[data-fixed='1'] { animation: none !important; }
+@keyframes dshTypeBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1px); }
+}
+.dsh-sitter-wrap[data-free='1'] { animation: none !important; z-index: 30; }
+.dsh-sitter-curtain { position: absolute; left: -4px; right: -4px; top: 0; bottom: 0; pointer-events: none; z-index: 6; opacity: 0; }
+.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain { opacity: 1; }
+.dsh-sitter-curtain span {
+  position: absolute; left: 0; right: 0; height: 54%;
+  background:
+    repeating-linear-gradient(90deg, rgba(0,0,0,.07) 0 3px, rgba(0,0,0,0) 3px 11px),
+    linear-gradient(180deg, #dcae57 0%, #c9902f 70%, #a9751f 100%);
+  transition: transform 190ms cubic-bezier(.4,0,.2,1);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.16) inset;
+}
+.dsh-sitter-curtain span:first-child { top: 0; transform: translateY(-100%); border-radius: 0 0 6px 6px; }
+.dsh-sitter-curtain span:last-child { bottom: 0; transform: translateY(100%); border-radius: 6px 6px 0 0; }
+.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:first-child { transform: translateY(0); }
+.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:last-child { transform: translateY(0); }
+.dsh-sitter-wrap[data-snapping='1'] { transition: left 180ms ease-out, top 180ms ease-out; }
+/* 忙碌时的“手轻轻上下”：素材只有一帧，用 CSS 做 1.5px 起伏，60fps 绝对平滑 */
+@keyframes dshBusyBob {
+  0%, 100% { transform: translateY(0); }
+  50%      { transform: translateY(-1.5px); }
+}
+.dsh-sitter-wrap[data-working='1'] .dsh-sitter-img {
+  animation: dshBusyBob 950ms ease-in-out infinite;
+}
+.dsh-sitter-wrap[data-drag='1'] .dsh-sitter-brick { opacity: 0; }
+.dsh-sitter-wrap[data-drag='1'] {
+  animation: none !important;
+  z-index: 40;
+  filter: drop-shadow(0 3px 4px rgba(0,0,0,.18));
+}
+.dsh-sitter-wrap[data-drag='1'] .dsh-sitter-img {
+  cursor: grabbing;
+  animation: dshFly 380ms ease-in-out infinite;
+}
+@keyframes dshFly {
+  0%, 100% { transform: translateY(0) rotate(-1.5deg); }
+  50%      { transform: translateY(-4px) rotate(1.5deg); }
+}
+.dsh-sitter-img {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: var(--pet-h);
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  transform-origin: 50% 100%;
+  animation: dshSitterBreath 3.8s ease-in-out infinite;
+  image-rendering: auto;
+}
+.dsh-sitter-img[data-sleep='1'] {
+  animation: dshSitterBreathSleep 5.2s ease-in-out infinite;
+}
+.dsh-sitter-img[data-working='1'] { animation: dshSitterSitDown 260ms ease-out; }
+@keyframes dshSitterSitDown {
+  0% { transform: translateY(-3px); }
+  60% { transform: translateY(1px); }
+  100% { transform: translateY(0); }
+}
+.dsh-sitter-wrap[data-attention='1'] .dsh-sitter-img { transform: translateY(-1px); }
+.dsh-sitter-wrap[data-shake='1'] { animation: dshSitterShake 700ms ease-in-out; }
+@keyframes dshSitterShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-2px); }
+  40% { transform: translateX(2px); }
+  60% { transform: translateX(-1px); }
+  80% { transform: translateX(1px); }
+}
+.dsh-sitter-wrap[data-cheer='1'] .dsh-sitter-img { animation: dshSitterCheer 700ms ease-in-out 2; }
+@keyframes dshSitterCheer {
+  0%, 100% { transform: translateY(0); }
+  35% { transform: translateY(-6px); }
+  70% { transform: translateY(0); }
+}
+.dsh-sitter-img { pointer-events: auto; cursor: pointer; }
+.dsh-sitter-img[data-poke='1'] { animation: dshPoke 600ms ease-out; }
+@keyframes dshPoke {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-4px) scale(1.03); }
+  70% { transform: translateY(0) scale(0.99); }
+}
+.dsh-sitter-say {
+  position: absolute;
+  right: 44px;
+  bottom: calc(var(--pet-h) + 6px);
+  z-index: 5;
+  max-width: 150px;
+  padding: 5px 9px;
+  background: #fdf7ea;
+  border: 2px solid #2b2b36;
+  border-radius: 10px;
+  font: 700 11px/1.35 ui-monospace, Consolas, monospace;
+  color: #2b2b36;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: dshRunBubble 1.6s ease-in-out infinite;
+}
+.dsh-sitter-runwrap {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 3;
+}
+.dsh-sitter-runner {
+  position: absolute;
+  bottom: calc(var(--pet-h) * 0.15);
+  right: 0;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  image-rendering: auto;
+  animation-name: dshRun;
+  animation-timing-function: linear;
+  animation-direction: alternate;
+}
+@keyframes dshRun {
+  from { transform: translateX(0); }
+  to { transform: translateX(calc(-1 * var(--run-span, 46vw))); }
+}
+.dsh-sitter-runbulk {
+  position: absolute;
+  right: 6px;
+  bottom: calc(var(--pet-h) + var(--pet-toppad) + 6px);
+  padding: 6px 10px;
+  background: #fdf7ea;
+  border: 2px solid #2b2b36;
+  border-radius: 10px;
+  font: 700 12px/1.3 ui-monospace, Consolas, monospace;
+  color: #2b2b36;
+  white-space: nowrap;
+  animation: dshRunBubble 1.2s ease-in-out infinite;
+}
+@keyframes dshRunBubble {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+.dsh-sitter-veil {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(18, 18, 26, 0.55);
+  backdrop-filter: blur(1.5px);
+  pointer-events: auto;
+  z-index: 9999;
+  animation: dshVeilIn 220ms ease-out;
+}
+@keyframes dshVeilIn { from { opacity: 0; } to { opacity: 1; } }
+.dsh-sitter-grow {
+  background-size: contain;
+  background-position: center bottom;
+  background-repeat: no-repeat;
+  image-rendering: auto;
+  transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
+  transform-origin: 50% 50%;
+}
+.dsh-sitter-veil[data-crack='1'] { animation: dshVeilIn 220ms ease-out, dshCrack 3.6s ease-in-out infinite; }
+@keyframes dshCrack {
+  0%, 8%, 100% { transform: translate(0, 0); }
+  2% { transform: translate(-7px, 3px); }
+  4% { transform: translate(6px, -3px); }
+  6% { transform: translate(-3px, 2px); }
+}
+.dsh-sitter-veil-hint {
+  position: absolute;
+  bottom: 12vh;
+  color: #fff;
+  font: 14px/1.4 ui-monospace, Consolas, monospace;
+  opacity: 0.75;
+  animation: dshHintPulse 1.6s ease-in-out infinite;
+}
+@keyframes dshHintPulse { 0%, 100% { opacity: 0.35; } 50% { opacity: 0.9; } }
+.dsh-sitter-modal {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  min-width: 260px;
+  padding: 20px 22px 18px;
+  background: #fdf7ea;
+  border: 3px solid #2b2b36;
+  border-radius: 12px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
+  text-align: center;
+  pointer-events: auto;
+}
+.dsh-sitter-modal-title { font: 700 17px/1.5 ui-monospace, Consolas, monospace; color: #2b2b36; }
+.dsh-sitter-modal-sub { margin-top: 6px; font: 12px/1.5 ui-monospace, Consolas, monospace; color: #7a7a8c; }
+.dsh-sitter-modal-btn {
+  margin-top: 14px;
+  width: 100%;
+  padding: 8px 0;
+  font: 700 14px/1 ui-monospace, Consolas, monospace;
+  color: #101018;
+  background: #ffd479;
+  border: 2px solid #2b2b36;
+  border-radius: 8px;
+  cursor: pointer;
+}
+.dsh-sitter-modal-btn:active { transform: translateY(1px); }
+.dsh-sitter-card {
+  position: absolute;
+  right: calc(100% + 10px);
+  bottom: 12px;
+  width: 132px;
+  padding: 7px 9px 7px 8px;
+  box-sizing: border-box;
+  background: #fdf7ea;
+  border: 2px solid #2b2b36;
+  border-radius: 8px;
+  box-shadow: 0 2px 0 rgba(0, 0, 0, 0.12);
+  font: 11px/1.5 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: #2b2b36;
+  opacity: 0;
+  transform: translateX(4px);
+  transition: opacity 140ms ease-out, transform 140ms ease-out;
+  pointer-events: none;
+  z-index: 5;
+  white-space: nowrap;
+}
+.dsh-sitter-card[data-on='1'] { opacity: 1; transform: translateX(0); }
+.dsh-sitter-card::after {
+  content: '';
+  position: absolute;
+  right: -7px;
+  top: 50%;
+  width: 10px;
+  height: 10px;
+  background: #fdf7ea;
+  border-right: 2px solid #2b2b36;
+  border-top: 2px solid #2b2b36;
+  transform: translateY(-50%) rotate(45deg);
+}
+.dsh-sitter-row { display: flex; align-items: center; gap: 5px; }
+.dsh-sitter-row + .dsh-sitter-row { margin-top: 2px; }
+.dsh-sitter-icon {
+  width: 14px; height: 14px;
+  flex: none;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+}
+.dsh-sitter-label { opacity: 0.72; }
+.dsh-sitter-value { margin-left: auto; font-weight: 700; letter-spacing: 0.2px; }
+.dsh-sitter-think {
+  position: absolute;
+  left: 56%;                 /* 挪到头顶偏右，不再贴右上角 */
+  top: -2px;
+  width: 30px;
+  height: 30px;
+  transform-origin: 20% 100%;  /* 尾巴朝向头顶 */
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+  opacity: 0;
+  display: none;
+  z-index: 4;
+}
+.dsh-sitter-wrap[data-think='1'][data-state='idle'][data-working='1'] .dsh-sitter-think {
+  display: block;
+  animation: dshSitterThink 2.4s ease-in-out infinite;
+}
+@keyframes dshSitterThink {
+  0%, 100% { opacity: 0; transform: translateY(2px) scale(0.9); }
+  15%, 75% { opacity: 1; transform: translateY(0) scale(1); }
+  90% { opacity: 0; transform: translateY(-3px) scale(1); }
+}
+.dsh-sitter-bubble {
+  position: absolute;
+  right: -4px;
+  top: 32px;
+  width: 24px;
+  height: 24px;
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  image-rendering: auto;
+  opacity: 0;
+  display: none;
+}
+.dsh-sitter-wrap[data-state='sleep'] .dsh-sitter-bubble {
+  display: block;
+  animation: dshSitterBubble 8.5s ease-in-out infinite;
+}
+.dsh-sitter-brick {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: var(--brick-bottom);
+  width: var(--brick-w);
+  height: var(--brick-h);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center bottom;
+  image-rendering: auto;
+  z-index: 0;
+  display: none;
+}
+.dsh-sitter-wrap[data-state='idle'] .dsh-sitter-brick {
+  display: block;
+}
+.dsh-sitter-wrap[data-working='1'] .dsh-sitter-img {
+  animation: dshSitterTypeBounce 260ms steps(2) infinite;
+}
+@keyframes dshSitterTypeBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-1px); }
+}
+.dsh-sitter-dbg {
+  position: absolute;
+  right: 0;
+  top: -18px;
+  font: 11px/13px monospace;
+  color: #c00;
+  background: rgba(255,255,255,0.92);
+  padding: 0 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+}
+`;
+
+    /** 横向贴输入框右缘、纵向坐输入框上沿，两个方向都实测。 */
+    function calibrate(node, report, rise) {
+      if (!node) return;
+      // 自由摆放过就不要再贴回输入框：后面的 right / left='auto' 会覆盖 left/top
+      if (node.getAttribute('data-free') === '1') return;
+      const input = document.querySelector('textarea, [contenteditable="true"]');
+      if (!input) return;
+      const cb = node.offsetParent || node.parentElement;
+      if (!cb) return;
+      const cbr = cb.getBoundingClientRect();
+      const ir = input.getBoundingClientRect();
+      const extraX = (RT.panelMarginX || 40) - 40;
+      const extraY = (RT.panelMarginY || 80) - 80;
+      if (false && RT.panelSide === 'left') {
+        const leftOffset = Math.round(ir.left - cbr.left) + extraX;
+        node.style.left = leftOffset + 'px';
+        node.style.right = 'auto';
+      } else {
+        const rightOffset = Math.round(cbr.right - ir.right) + RT.seatInset + extraX;
+        node.style.right = rightOffset + 'px';
+        node.style.left = 'auto';
+      }
+      let lift = INITIAL_LIFT + extraY;
+      node.style.setProperty('--dsh-sitter-lift', lift + 'px');
+      let gap = node.getBoundingClientRect().bottom - ir.top;
+      for (let i = 0; i < 3 && Math.abs(gap) > 1; i += 1) {
+        lift = lift + gap;
+        node.style.setProperty('--dsh-sitter-lift', lift + 'px');
+        gap = node.getBoundingClientRect().bottom - ir.top;
+      }
+      // 让出金砖的高度：宠物要坐在砖上，而不是坐在输入框上
+      lift = lift + (rise || 0);
+      node.style.setProperty('--dsh-sitter-lift', lift + 'px');
+
+      // 底部安全区：窗口延伸到任务栏后面时，整只往上抬，避免被切掉
+      const SAFE_BOTTOM = 14;
+      for (let s = 0; s < 3; s += 1) {
+        const rr = node.getBoundingClientRect();
+        const over = rr.bottom - (window.innerHeight - SAFE_BOTTOM);
+        if (over <= 0) break;
+        lift += over;
+        node.style.setProperty('--dsh-sitter-lift', lift + 'px');
+      }
+
+      if (report) {
+        const g2 = node.getBoundingClientRect().bottom - ir.top;
+        report('dx:' + rightOffset + ' lift:' + Math.round(lift) + ' gap:' + g2.toFixed(1));
+      }
+    }
+
+    // 模块级时间戳：槽位重挂载不会重置时间轴
+    // 宿主端口可能在候选列表里漂移，先探测再固定下来
+    const API_PORTS = [43717, 43718, 43719, 43720];
+    let API_BASE = 'http://127.0.0.1:43717';
+    let apiResolved = false;
+
+    async function resolveApi() {
+      if (apiResolved) return;
+      apiResolved = true;
+      for (const port of API_PORTS) {
+        try {
+          const r = await fetch('http://127.0.0.1:' + port + '/hello', { cache: 'no-store' });
+          if (r.ok) {
+            API_BASE = 'http://127.0.0.1:' + port;
+            return;
+          }
+        } catch (e) { /* 试下一个 */ }
+      }
+    }
+
+    const INSTANCE_ID = Math.random().toString(36).slice(2);
+    let LOADED_AT = Date.now();
+    let LAST_RESET = 0;
+
+    function reportClientError(err) {
+      try {
+        fetch(API_BASE + '/client-error', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ msg: String(err && err.message || err), stack: String(err && err.stack || '') }),
+        }).catch(() => {});
+      } catch (e) { /* ignore */ }
+    }
+
+    /** 出错只让宠物消失，绝不拖垮整个页面 */
+    class Boundary extends React.Component {
+      constructor(props) {
+        super(props);
+        this.state = { failed: false };
+      }
+      static getDerivedStateFromError() {
+        return { failed: true };
+      }
+      componentDidCatch(err) {
+        reportClientError(err);
+      }
+      render() {
+        return this.state.failed ? null : this.props.children;
+      }
+    }
+
+
+    const PANEL_CSS = `
+.dsh-sitter-panel { padding: 18px 20px 32px; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; color: #22222a; }
+.dsh-sitter-panel-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 14px; }
+.dsh-sitter-panel-head h2 { margin: 0; font-size: 18px; font-weight: 700; }
+.dsh-sitter-panel-coins { font-size: 13px; color: #6b6b7a; }
+.dsh-sitter-panel-coins b { color: #d4921a; font-size: 15px; }
+.dsh-sitter-panel-size { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; font-size: 13px; color: #55555f; }
+.dsh-sitter-panel-size input { flex: 1; max-width: 260px; accent-color: #b8862f; }
+.dsh-sitter-toggle { display: inline-flex; align-items: center; gap: 6px; margin: 0 0 12px; font-size: 13px; color: #55555f; cursor: pointer; }
+.dsh-sitter-toggle input { width: 16px; height: 16px; accent-color: #b8862f; cursor: pointer; }
+.dsh-sitter-rules { margin-top: 22px; padding-top: 14px; border-top: 1px dashed #e3e3ea; color: #55555f; }
+.dsh-sitter-rules-title { font-size: 12px; font-weight: 700; color: #2b2b36; margin: 0 0 6px; }
+.dsh-sitter-rules ul { margin: 0 0 14px; padding-left: 18px; }
+.dsh-sitter-rules li { font-size: 12px; line-height: 1.7; color: #6b6b7a; }
+.dsh-sitter-status { font-size: 11px; color: #8a8a96; margin: 0 0 8px; }
+.dsh-sitter-err { font-size: 11px; color: #c0392b; margin-bottom: 8px; }
+.dsh-sitter-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.dsh-sitter-tabs button { padding: 6px 16px; border-radius: 999px; border: 1px solid #dcdce4; background: #fff; font-size: 13px; cursor: pointer; color: #44444e; }
+.dsh-sitter-tabs button.on { background: #2b2b36; color: #fff; border-color: #2b2b36; }
+.dsh-sitter-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(132px,100%), 1fr)); gap: 12px; align-items: start; max-height: 60vh; overflow-y: auto; padding: 2px; }
+.dsh-sitter-pcard { box-sizing: border-box; min-height: 152px; border: 1px solid #e3e3ea; border-radius: 12px; padding: 10px; background: #fff; cursor: pointer; text-align: center; transition: box-shadow .15s, border-color .15s; }
+.dsh-sitter-pcard:hover { border-color: #c9a227; box-shadow: 0 4px 14px rgba(0,0,0,.07); }
+.dsh-sitter-pcard.on { border-color: #c9a227; box-shadow: 0 0 0 2px rgba(201,162,39,.25) inset; }
+.dsh-sitter-pcard-art { height: 96px; background-repeat: no-repeat; background-position: center bottom; background-size: contain; image-rendering: auto; margin-bottom: 6px; }
+.dsh-sitter-pcard-art.locked { filter: grayscale(1) brightness(.55) opacity(.5); }
+.dsh-sitter-pcard-name { font-size: 13px; font-weight: 600; }
+.dsh-sitter-pcard-hint { font-size: 11px; color: #8a8a96; margin-top: 2px; min-height: 14px; }
+.dsh-sitter-buy { margin-top: 8px; width: 100%; padding: 6px 0; border-radius: 8px; border: 1px solid #2b2b36; background: #fffdf6; font-size: 12px; cursor: pointer; }
+.dsh-sitter-buy.dim { opacity: .55; cursor: not-allowed; }
+`;
+
+
+    // ───────── 设置页面板：衣橱 + 商店 ─────────
+    function WardrobePanel() {
+      const [tab, setTab] = React.useState('wardrobe');
+      const [skins, setSkins] = React.useState(null);
+      const [coins, setCoins] = React.useState(null);
+      const [size, setSize] = React.useState(83);
+      const [pacifier, setPacifier] = React.useState(true);
+
+      const patchCfg = (body) => {
+        fetch('http://127.0.0.1:43717/config', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        }).catch(() => {});
+        // 同页面内广播：宠物立刻换，不用等下一次轮询
+        try { window.dispatchEvent(new CustomEvent('dsh-sitter:cfg', { detail: body })); } catch { /* ignore */ }
+      };
+
+      const [err, setErr] = React.useState('');
+
+      const load = () => {
+        fetch('http://127.0.0.1:43717/skins', { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((d) => { setSkins(d); setCoins(d.coins); setErr(''); })
+          .catch((e) => setErr('接口失败: ' + String(e && e.message || e)));
+        fetch('http://127.0.0.1:43717/config', { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((d) => { setSize(d.displayHeight); setPacifier(d.features?.pacifier !== false); })
+          .catch(() => {});
+      };
+
+      React.useEffect(() => { load(); }, []);
+
+      const equip = (id) => {
+        fetch('http://127.0.0.1:43717/skins/equip', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id }),
+        }).then(() => {
+          try { window.dispatchEvent(new CustomEvent('dsh-sitter:cfg', { detail: { outfits: { force: id } } })); } catch { /* ignore */ }
+          load();
+        }).catch(() => {});
+      };
+
+      const buy = (id) => {
+        fetch('http://127.0.0.1:43717/skins/buy', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ id }),
+        }).then(() => load()).catch(() => {});
+      };
+
+      const setSizeTo = (v) => {
+        setSize(v);
+        fetch('http://127.0.0.1:43717/config', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ displayHeight: v }),
+        }).catch(() => {});
+      };
+
+      const catalog = skins?.items || [];
+      const balance = coins?.balance ?? 0;
+      const equipped = skins?.equipped ?? null;
+
+      const seasonals = [
+        { id: '0', name: '冬装', hint: '12–2 月自动' },
+        { id: '1', name: '秋装', hint: '9–11 月自动' },
+        { id: '2', name: '春装', hint: '3–5 月自动' },
+        { id: '3', name: '夏装', hint: '6–8 月自动' },
+        { id: 'pajama', name: '睡衣', hint: '23:00–07:00 自动' },
+      ];
+
+      return h('div', { className: 'dsh-sitter-panel' },
+        h('style', null, PANEL_CSS),
+        h('div', { className: 'dsh-sitter-panel-head' },
+          h('h2', null, '贝草兰'),
+          h('div', { className: 'dsh-sitter-panel-coins' }, '吉吉币 ', h('b', null, String(balance))),
+        ),
+
+        h('div', { className: 'dsh-sitter-panel-size' },
+          h('span', null, '大小'),
+          h('input', {
+            type: 'range', min: 50, max: 140, step: 1, value: size,
+            onChange: (e) => setSizeTo(Number(e.target.value)),
+          }),
+          h('b', null, size + ' px'),
+        ),
+
+        h('label', { className: 'dsh-sitter-toggle' },
+          h('input', {
+            type: 'checkbox',
+            checked: pacifier,
+            onChange: (e) => { setPacifier(e.target.checked); patchCfg({ features: { pacifier: e.target.checked } }); },
+          }),
+          h('span', null, '戴奶嘴'),
+        ),
+        err ? h('div', { className: 'dsh-sitter-err' }, err) : null,
+        h('div', { className: 'dsh-sitter-status' },
+          '数据：' + (skins ? ((skins.items || []).length + ' 件商品') : '加载中…') +
+          (coins ? '，余额 ' + coins.balance : '')),
+        h('div', { className: 'dsh-sitter-tabs' },
+          h('button', { className: tab === 'wardrobe' ? 'on' : '', onClick: () => setTab('wardrobe') }, '衣橱'),
+          h('button', { className: tab === 'shop' ? 'on' : '', onClick: () => setTab('shop') }, '商店'),
+        ),
+
+        h('div', { className: 'dsh-sitter-rules' },
+          h('div', { className: 'dsh-sitter-rules-title' }, '吉吉币怎么赚'),
+          h('ul', null,
+            h('li', null, '每学习 10 分钟 = 1 枚吉吉币（看书、写代码、查资料都算）'),
+            h('li', null, '只有你在干活时才计时，摸鱼不算'),
+            h('li', null, '每天 0 点重置当日时长，币不会清零'),
+            h('li', null, '皮肤买到就永久解锁，换着穿不额外扣币'),
+          ),
+          h('div', { className: 'dsh-sitter-rules-title' }, '商店说明'),
+          h('ul', null,
+            h('li', null, '价格 20–200 币，越贵越稀有'),
+            h('li', null, '买完自动换上；以后在「衣橱」里随时切'),
+            h('li', null, '12 套皮肤，每套都有戴/不戴奶嘴两版'),
+            h('li', null, '吉吉币只在本地保存，不上传任何服务器'),
+          ),
+        ),
+        tab === 'wardrobe'
+          ? h('div', { className: 'dsh-sitter-grid' },
+            seasonals.map((s) => h('div', {
+              key: s.id,
+              className: 'dsh-sitter-pcard' + (String(equipped) === s.id ? ' on' : ''),
+              onClick: () => equip(s.id),
+            },
+              h('div', { className: 'dsh-sitter-pcard-art', style: {
+                backgroundImage: 'url("' + (s.id === 'pajama' ? SPRITES.pajama0 : SPRITES['idle' + s.id]) + '")',
+              } }),
+              h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
+              h('div', { className: 'dsh-sitter-pcard-hint' }, s.hint),
+            )),
+            catalog.filter((s) => s.owned).map((s) => h('div', {
+              key: s.id,
+              className: 'dsh-sitter-pcard' + (equipped === s.id ? ' on' : ''),
+              onClick: () => equip(s.id),
+            },
+              h('div', { className: 'dsh-sitter-pcard-art', style: { backgroundImage: 'url("' + (SPRITES['skin_' + s.id] || SPRITES.idle0) + '")' } }),
+              h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
+              h('div', { className: 'dsh-sitter-pcard-hint' }, '已解锁'),
+            )),
+          )
+          : h('div', { className: 'dsh-sitter-grid' },
+            catalog.map((s) => h('div', { key: s.id, className: 'dsh-sitter-pcard' + (s.owned ? ' owned' : '') },
+              h('div', { className: 'dsh-sitter-pcard-art' + (s.owned ? '' : ' locked'), style: {
+                backgroundImage: 'url("' + (SPRITES['skin_' + s.id] || SPRITES.idle0) + '")',
+              } }),
+              h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
+              h('div', { className: 'dsh-sitter-pcard-hint' }, s.desc || ''),
+              s.owned
+                ? h('button', { className: 'dsh-sitter-buy', onClick: () => equip(s.id) }, '穿上')
+                : h('button', {
+                    className: 'dsh-sitter-buy' + (s.affordable ? '' : ' dim'),
+                    disabled: !s.affordable,
+                    onClick: () => buy(s.id),
+                  }, s.affordable ? (s.price + ' 币解锁') : ('还差 ' + (s.price - balance) + ' 币')),
+            )),
+          ),
+      );
+    }
+
+    function Sitter() {
+      const owned = () => (typeof window === 'undefined' ? true : window.__dshSitterOwner === INSTANCE_ID);
+      const wrapRef = React.useRef(null);
+      const stateRef = React.useRef('sleep');
+      const forceAt = React.useRef(0);
+      const hoverRef = React.useRef(false);
+      const lastCmdAt = React.useRef(0);
+      const triggerRef = React.useRef(null);
+      const stageRef = React.useRef(0);
+      const runningRef = React.useRef(false);
+      const lastUserRef = React.useRef('');
+      const prevErr = React.useRef(0);
+      const prevEnd = React.useRef(0);
+
+      const [ready, setReady] = React.useState(false);
+      const [now, setNow] = React.useState(() => Date.now());
+      const [dbg, setDbg] = React.useState('');
+      const [typing, setTyping] = React.useState(false);
+      const [blink, setBlink] = React.useState(false);
+      const [hover, setHover] = React.useState(false);
+      const [stats, setStats] = React.useState(null);
+      const [agent, setAgent] = React.useState(null);
+      const [working, setWorking] = React.useState(false);
+      const [shake, setShake] = React.useState(false);
+      const [cheer, setCheer] = React.useState(false);
+      const [attention, setAttention] = React.useState(false);
+      const [force, setForce] = React.useState(null);
+      const [cfg, setCfg] = React.useState(null);
+      const [stage, setStage] = React.useState(0);
+      const [prompt, setPrompt] = React.useState(false);
+      const [angryFrame, setAngryFrame] = React.useState(0);
+      const [running, setRunning] = React.useState(false);
+      const [say, setSay] = React.useState('');
+      const [poke, setPoke] = React.useState(false);
+      const [dragging, setDragging] = React.useState(false);
+      const [ultra, setUltra] = React.useState(false);
+      const [menu, setMenu] = React.useState(false);
+      // 已经有别的活实例在位 → 从第一帧起就不画（否则先闪一只再退场 = 重影）
+      const [dead, setDead] = React.useState(() => {
+        if (typeof window === 'undefined') return false;
+        const cur = window.__dshSitterOwner;
+        return !!cur && cur !== INSTANCE_ID;
+      });
+      const ultraFrameRef = React.useRef(0);
+      const [freePos, setFreePos] = React.useState(null);
+      const [snapping, setSnapping] = React.useState(false);
+      const [curtain, setCurtain] = React.useState(false);
+      const curtainRef = React.useRef({ form: null, timer: 0 });
+      const [shift, setShift] = React.useState({ x: 0, y: 0 });
+      const shiftRef = React.useRef({ x: 0, y: 0 });
+      const dragRef = React.useRef(null);
+      const lastSayRef = React.useRef('');
+      const [runFrame, setRunFrame] = React.useState(0);
+      const workMsRef = React.useRef(0);
+      const lastTickRef = React.useRef(Date.now());
+      const lastInput = React.useRef(Date.now());
+
+      hoverRef.current = hover;
+      stageRef.current = stage;
+      runningRef.current = running;
+      if (agent && typeof agent.lastUser === 'string') lastUserRef.current = agent.lastUser;
+
+      // 配置里位置被清空 → 回到吸附位（否则拖出屏幕后再也回不来）
+      const cfgPosRef = React.useRef(null);
+      React.useEffect(() => {
+        const has = RT.freeLeft !== null || RT.freeTop !== null;
+        const prev = cfgPosRef.current;
+        cfgPosRef.current = has;
+        if (prev === true && has === false) setFreePos(null);
+      }, [RT.freeLeft, RT.freeTop]);
+      const agentBusy = RT.workLink && !!(agent && agent.phase === 'busy');
+
+      // ---- 资源预载 + 心跳 ----
+      React.useEffect(() => {
+        let alive = true;
+        let pending = Object.keys(SPRITES).length;
+        for (const key of Object.keys(SPRITES)) {
+          const img = new Image();
+          const done = () => { pending -= 1; if (alive && pending === 0) setReady(true); };
+          img.onload = done;
+          img.onerror = done;
+          img.src = SPRITES[key];
+        }
+        let lastState = 'sleep';
+        const tick = setInterval(() => {
+          if (!alive) return;
+          setNow(Date.now());
+          const s = stateRef.current;
+          if (s !== lastState) {
+            lastState = s;
+            requestAnimationFrame(() => {
+              calibrate(wrapRef.current, DEBUG ? setDbg : null, s === 'idle' ? G().seatRise : 0);
+            });
+          }
+        }, 120);
+        return () => { alive = false; clearInterval(tick); };
+      }, []);
+
+      // ---- 位置校准 ----
+      React.useLayoutEffect(() => {
+        const run = () => requestAnimationFrame(() => {
+          calibrate(wrapRef.current, DEBUG ? setDbg : null, stateRef.current === 'idle' ? G().seatRise : 0);
+        });
+        run();
+        window.addEventListener('resize', run);
+        let ro;
+        let retry = null;
+        let tries = 0;
+        const attach = () => {
+          try {
+            const input = document.querySelector('textarea, [contenteditable="true"]');
+            if (!input) {
+              tries += 1;
+              if (tries < 60) retry = setTimeout(attach, 500);
+              return;
+            }
+            run();
+            if (typeof ResizeObserver !== 'undefined') {
+              ro = new ResizeObserver(run);
+              ro.observe(input);
+              if (input.parentElement) ro.observe(input.parentElement);
+            }
+          } catch (e) { /* ignore */ }
+        };
+        attach();
+        return () => {
+          window.removeEventListener('resize', run);
+          if (ro) ro.disconnect();
+          if (retry) clearTimeout(retry);
+        };
+      }, []);
+
+      // ---- 打字监听 ----
+      React.useEffect(() => {
+        const input = document.querySelector('textarea, [contenteditable="true"]');
+        if (!input) return undefined;
+        let hold = null;
+        const bump = () => {
+          setTyping(true);
+          if (hold) clearTimeout(hold);
+          hold = setTimeout(() => setTyping(false), RT.typingHoldMs);
+        };
+        input.addEventListener('input', bump);
+        input.addEventListener('keydown', bump);
+        return () => {
+          input.removeEventListener('input', bump);
+          input.removeEventListener('keydown', bump);
+          if (hold) clearTimeout(hold);
+        };
+      }, []);
+
+      // ---- 眨眼 ----
+      React.useEffect(() => {
+        let alive = true;
+        let a = null;
+        let b = null;
+        const schedule = () => {
+          a = setTimeout(() => {
+            if (!alive) return;
+            setBlink(true);
+            b = setTimeout(() => {
+              if (!alive) return;
+              setBlink(false);
+              schedule();
+            }, RT.blinkMs);
+          }, 3500 + Math.random() * 3000);
+        };
+        schedule();
+        return () => {
+          alive = false;
+          if (a) clearTimeout(a);
+          if (b) clearTimeout(b);
+        };
+      }, []);
+
+      // ---- 学习监督：长时间没操作就逐步放大 ----
+      React.useEffect(() => {
+        const touch = () => { lastInput.current = Date.now(); };
+        window.addEventListener('mousemove', touch, { passive: true });
+        window.addEventListener('keydown', touch);
+        window.addEventListener('pointerdown', touch);
+        window.addEventListener('wheel', touch, { passive: true });
+        return () => {
+          window.removeEventListener('mousemove', touch);
+          window.removeEventListener('keydown', touch);
+          window.removeEventListener('pointerdown', touch);
+          window.removeEventListener('wheel', touch);
+        };
+      }, []);
+
+      // 空闲到阈值 → 进入第 1 级
+      React.useEffect(() => {
+        const timer = setInterval(() => {
+          if (!RT.escalateEnabled || prompt) return;
+          const idle = Date.now() - lastInput.current;
+          if (idle >= RT.escalateIdleMs) {
+            setStage((s) => (s === 0 ? 1 : s));
+          }
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [prompt]);
+
+      // 升级后每 stepMs 翻倍，直到占满屏幕
+      React.useEffect(() => {
+        if (stage === 0 || prompt) return undefined;
+        const timer = setInterval(() => {
+          setStage((s) => (s >= fullStageOf() ? s : s + 1));
+        }, RT.escalateStepMs);
+        return () => clearInterval(timer);
+      }, [stage, prompt]);
+
+      // 鼠标一动就取消升级（人回来了）
+      React.useEffect(() => {
+        if (stage === 0 || prompt) return undefined;
+        if (stage >= fullStageOf()) return undefined; // 已占满：锁定，等人点
+        const reset = () => setStage(0);
+        window.addEventListener('mousemove', reset, { passive: true });
+        window.addEventListener('pointerdown', reset);
+        window.addEventListener('keydown', reset);
+        return () => {
+          window.removeEventListener('mousemove', reset);
+          window.removeEventListener('pointerdown', reset);
+          window.removeEventListener('keydown', reset);
+        };
+      }, [stage, prompt]);
+
+      // 锁定后空挥鞭：两帧循环
+      React.useEffect(() => {
+        if (stage === 0 || prompt) return undefined;
+        if (stage < fullStageOf()) return undefined;
+        const timer = setInterval(() => setAngryFrame((f) => (f + 1) % 4), 180);
+        return () => clearInterval(timer);
+      }, [stage, prompt]);
+
+      // 单实例仲裁：最后一个挂载的实例持有 owner，其余自行退场（绝不互删 DOM）
+      // 用 useLayoutEffect：在 paint 之前就决定画不画，否则后挂载的会先画一帧叠成两只
+      React.useLayoutEffect(() => {
+        const now = Date.now();
+        const cur = window.__dshSitterOwner;
+        const at = window.__dshSitterOwnerAt || 0;
+        if (!cur || cur === INSTANCE_ID || now - at > 2500) {
+          window.__dshSitterOwner = INSTANCE_ID;
+          window.__dshSitterOwnerAt = now;
+          if (dead) setDead(false);
+        } else if (!dead) {
+          setDead(true);
+        }
+        return () => {
+          if (window.__dshSitterOwner === INSTANCE_ID) {
+            window.__dshSitterOwner = null;
+            window.__dshSitterOwnerAt = 0;
+          }
+        };
+      }, []);
+
+      // 面板里改了设置 → 立刻生效，不用等轮询
+      React.useEffect(() => {
+        const onCfg = (e) => {
+          const patch = e && e.detail;
+          if (!patch) return;
+          applyConfig(patch);
+          setCfg((old) => ({ ...(old || {}), ...patch }));
+        };
+        window.addEventListener('dsh-sitter:cfg', onCfg);
+        return () => window.removeEventListener('dsh-sitter:cfg', onCfg);
+      }, []);
+
+      // owner 心跳：每 1.2s 检查一次，只在 effect 里改 state
+      React.useEffect(() => {
+        const tick = window.setInterval(() => {
+          const t = Date.now();
+          if (window.__dshSitterOwner === INSTANCE_ID) {
+            window.__dshSitterOwnerAt = t;
+            setDead(false);
+          } else if (!window.__dshSitterOwner || t - (window.__dshSitterOwnerAt || 0) > 2500) {
+            window.__dshSitterOwner = INSTANCE_ID;
+            window.__dshSitterOwnerAt = t;
+            setDead(false);
+          } else {
+            setDead(true);
+          }
+        }, 1200);
+        return () => window.clearInterval(tick);
+      }, []);
+
+      // 换装帘子：形态变化时先合拢，闭合瞬间完成切换，再打开
+      React.useEffect(() => {
+        const form = currentForm();
+        const prev = curtainRef.current.form;
+        if (prev === null) { curtainRef.current.form = form; return; }
+        if (prev === form) return;
+        curtainRef.current.form = form;
+        setCurtain(true);
+        clearTimeout(curtainRef.current.timer);
+        curtainRef.current.timer = window.setTimeout(() => setCurtain(false), 210);
+      }, [cfg, force, working]);
+
+      // 上报客户端版本：定期上报，便于确认线上跑的是哪一版
+      React.useEffect(() => {
+        resolveApi();
+        const beacon = () => {
+          fetch(API_BASE + '/hello', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ v: '__BUILD_VERSION__' }),
+          }).catch(() => {});
+        };
+        beacon();
+        const timer = setInterval(beacon, 20000);
+        return () => clearInterval(timer);
+      }, []);
+
+      // 累计连续工作时长，到点就跑一圈提醒休息
+      React.useEffect(() => {
+        const timer = setInterval(() => {
+          const nowTs = Date.now();
+          const dt = nowTs - lastTickRef.current;
+          lastTickRef.current = nowTs;
+          if (running) return;
+          const busy = typing || (RT.workLink && agent && agent.phase === 'busy');
+          if (busy) workMsRef.current += dt;
+          else workMsRef.current = Math.max(0, workMsRef.current - dt * 0.5);
+          if (RT.breakWorkMs > 0 && workMsRef.current >= RT.breakWorkMs) {
+            workMsRef.current = 0;
+            setRunning(true);
+            setRunFrame(0);
+            setTimeout(() => setRunning(false), RT.breakRunMs);
+          }
+        }, 1000);
+        return () => clearInterval(timer);
+      }, [running, typing, agent]);
+
+      // 跑步动画帧
+      React.useEffect(() => {
+        if (!running) return undefined;
+        const timer = setInterval(() => setRunFrame((f) => (f + 1) % 4), 140);
+        return () => clearInterval(timer);
+      }, [running]);
+
+      // 主动碎碎念：按距上次说话的时长判断，配置改了立即生效
+      React.useEffect(() => {
+        let last = Date.now();
+        const timer = setInterval(() => {
+          if (!RT.chatEnabled) return;
+          if (stageRef.current > 0 || runningRef.current) return;
+          const nowTs = Date.now();
+          if (nowTs - last < RT.chatIntervalMs) return;
+          const ctxLine = Math.random() < 0.55 ? pickContextLine(lastUserRef.current) : null;
+          const line = ctxLine || pickLine(lastSayRef.current);
+          if (!line) { last = nowTs; return; }
+          last = nowTs;
+          lastSayRef.current = line;
+          setSay(line);
+          setTimeout(() => setSay(''), RT.chatDurationMs);
+        }, 1500);
+        return () => clearInterval(timer);
+      }, []);
+
+      // ---- 运行时配置 ----
+      const loadConfig = () => {
+        if (typeof document !== 'undefined' && document.hidden) return;
+        fetch(API_BASE + '/config', { cache: 'no-store' })
+          .then((r) => r.json())
+          .then((c) => {
+            applyConfig(c);
+            if (typeof c.resetAt === 'number' && c.resetAt !== LAST_RESET) {
+              LAST_RESET = c.resetAt;
+              if (c.resetAt > LOADED_AT) {
+                LOADED_AT = Date.now();
+                setNow(Date.now());
+              }
+            }
+            setCfg(c);
+          })
+          .catch(() => {});
+      };
+      React.useEffect(() => {
+        loadConfig();
+        const timer = setInterval(loadConfig, 5000);
+        return () => clearInterval(timer);
+      }, []);
+
+      const patchConfig = (body) => {
+        fetch(API_BASE + '/config', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(body),
+        }).catch(() => {});
+      };
+
+      const setSizeBy = (delta) => {
+        const next = Math.max(50, Math.min(140, Math.round((RT.displayHeight || 83) + delta)));
+        patchConfig({ displayHeight: next });
+        setSay('这样大小合适吗');
+        setTimeout(() => setSay(''), 1800);
+      };
+
+      const cycleOutfit = () => {
+        const cur = Number(RT.outfitForce);
+        const next = (Number.isFinite(cur) ? cur + 1 : 0) % 4;
+        patchConfig({ outfits: { force: next } });
+        setSwapKey((k) => k + 1);
+        setTimeout(() => setSwapKey(0), 460);
+        setSay(['换好啦', '这套好看吗', '试试这件', '再换一套'][next % 4]);
+        setTimeout(() => setSay(''), 2200);
+      };
+
+      /** 唯一的贴图决策：先看是否变身/拖动，再按状态取图 */
+      const spriteFor = (draggingNow, form, pose) => {
+        if (draggingNow) {
+          return SPRITES.ultra0;
+        }
+        return formSprite(form, pose);
+      };
+
+      const spriteSleep = (ultraNow) => {
+        if (ultraNow) return SPRITES.ultra0;
+        return SPRITES.sleep;
+      };
+
+      const VIEW_PAD = 8;
+      const EDGE_MAGNET = 40;
+      const ANCHOR_MAGNET = 80;
+      const BOTTOM_SAFE = 14;
+      const SEAT_OVERLAP = 10;
+      const SEAT_SIDE = 6;
+
+      const parentBox = () => {
+        const node = wrapRef.current;
+        const parent = node && (node.offsetParent || node.parentElement);
+        if (!node || !parent) return null;
+        return { node, pr: parent.getBoundingClientRect() };
+      };
+
+      /** 视口坐标 → 夹进屏幕 → 换回父元素坐标 */
+      const clampViewport = (vx, vy) => {
+        const b = parentBox();
+        if (!b) return { x: Math.round(vx), y: Math.round(vy) };
+        const { node, pr } = b;
+        const maxVX = Math.max(VIEW_PAD, window.innerWidth - node.offsetWidth - VIEW_PAD);
+        const maxVY = Math.max(VIEW_PAD, window.innerHeight - node.offsetHeight - VIEW_PAD);
+        const cx = Math.round(Math.min(maxVX, Math.max(VIEW_PAD, vx)));
+        const cy = Math.round(Math.min(maxVY, Math.max(VIEW_PAD, vy)));
+        return { x: cx - Math.round(pr.left), y: cy - Math.round(pr.top) };
+      };
+
+      const composerBox = () => {
+        const el = document.querySelector('textarea, [contenteditable="true"]');
+        if (!el) return null;
+        const r = el.getBoundingClientRect();
+        if (!r.width || !r.height) return null;
+        return { left: r.left, right: r.right, top: r.top };
+      };
+
+      /** 视口内的合法范围 */
+      const viewportBox = () => {
+        const b = parentBox();
+        if (!b) return null;
+        const { node, pr } = b;
+        return {
+          node, pr,
+          minX: VIEW_PAD,
+          maxX: Math.max(VIEW_PAD, window.innerWidth - node.offsetWidth - VIEW_PAD),
+          minY: VIEW_PAD,
+          maxY: Math.max(VIEW_PAD, window.innerHeight - node.offsetHeight - BOTTOM_SAFE),
+        };
+      };
+
+      /** 6 个吸附点：四角 + 输入框左右两端 */
+      const snapAnchors = () => {
+        const box = viewportBox();
+        if (!box) return [];
+        const w = box.node.offsetWidth;
+        const h = box.node.offsetHeight;
+        const list = [
+          { id: 'tl', x: box.minX, y: box.minY },
+          { id: 'tr', x: box.maxX, y: box.minY },
+          { id: 'bl', x: box.minX, y: box.maxY },
+          { id: 'br', x: box.maxX, y: box.maxY },
+        ];
+        const cb = composerBox();
+        if (cb) {
+          const y = cb.top - h + SEAT_OVERLAP;
+          list.push({ id: 'seat-left', x: cb.left - w + SEAT_SIDE, y });
+          list.push({ id: 'seat-right', x: cb.right - SEAT_SIDE, y });
+        }
+        return list.map((a) => ({
+          id: a.id,
+          x: Math.min(box.maxX, Math.max(box.minX, a.x)),
+          y: Math.min(box.maxY, Math.max(box.minY, a.y)),
+        }));
+      };
+
+      /** 拖动中：离屏幕三边 ≤40px 就贴上去（下边已含安全区） */
+      const magnetEdges = (vx, vy) => {
+        const box = viewportBox();
+        if (!box) return { x: vx, y: vy };
+        const cx = vx <= box.minX + EDGE_MAGNET ? box.minX
+          : box.maxX - vx <= EDGE_MAGNET ? box.maxX : vx;
+        const cy = vy <= box.minY + EDGE_MAGNET ? box.minY
+          : box.maxY - vy <= EDGE_MAGNET ? box.maxY : vy;
+        return { x: cx, y: cy };
+      };
+
+      /** 松手：先吸 6 个点（80px），再退化贴边，都不满足原地停 */
+      const snapOnRelease = (pos) => {
+        const box = viewportBox();
+        if (!box) return pos;
+        const vx = pos.x + box.pr.left;
+        const vy = pos.y + box.pr.top;
+        let best = null;
+        for (const a of snapAnchors()) {
+          const d = Math.hypot(a.x - vx, a.y - vy);
+          if (d <= ANCHOR_MAGNET && (!best || d < best.d)) best = { d, a };
+        }
+        if (best) {
+          return { x: Math.round(best.a.x - box.pr.left), y: Math.round(best.a.y - box.pr.top) };
+        }
+        const m = magnetEdges(vx, vy);
+        return { x: Math.round(m.x - box.pr.left), y: Math.round(m.y - box.pr.top) };
+      };
+
+      const onDragStart = (e) => {
+        if (typeof e.button === 'number' && e.button !== 0) return;
+        const b = parentBox();
+        if (!b) return;
+        const { node, pr } = b;
+        const nr = node.getBoundingClientRect();
+        dragRef.current = { dx: e.clientX - nr.left, dy: e.clientY - nr.top, startX: e.clientX, startY: e.clientY, moved: false };
+        setFreePos({ x: Math.round(nr.left - pr.left), y: Math.round(nr.top - pr.top) });
+        setDragging(true);
+        try { node.setPointerCapture && node.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      };
+
+      React.useEffect(() => {
+        if (!dragging) return undefined;
+        const tick = setInterval(() => { ultraFrameRef.current += 1; }, 220);
+
+        const move = (e) => {
+          if (e.buttons !== undefined && (e.buttons & 1) === 0) return;
+          const d = dragRef.current;
+          if (!d) return;
+          if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 6) d.moved = true;
+          const m = magnetEdges(e.clientX - d.dx, e.clientY - d.dy);
+          setFreePos(clampViewport(m.x, m.y));
+        };
+
+        const up = () => {
+          const d = dragRef.current;
+          if (d && d.moved) d.endedAt = Date.now();
+          setDragging(false);
+          setFreePos((pos) => {
+            if (!pos) return pos;
+            const next = snapOnRelease(pos);
+            if (next.x !== pos.x || next.y !== pos.y) {
+              setSnapping(true);
+              window.setTimeout(() => setSnapping(false), 260);
+            }
+            fetch(API_BASE + '/config', {
+              method: 'POST',
+              headers: { 'content-type': 'application/json' },
+              body: JSON.stringify({ layout: { freeLeft: next.x, freeTop: next.y } }),
+            }).catch(() => {});
+            return next;
+          });
+        };
+
+        window.addEventListener('pointermove', move);
+        window.addEventListener('pointerup', up);
+        return () => {
+          clearInterval(tick);
+          window.removeEventListener('pointermove', move);
+          window.removeEventListener('pointerup', up);
+        };
+      }, [dragging]);
+
+      React.useEffect(() => {
+        if (!menu) return undefined;
+        const close = () => setMenu(false);
+        const t = setTimeout(() => {
+          document.addEventListener('pointerdown', close, { once: true });
+        }, 50);
+        return () => {
+          clearTimeout(t);
+          document.removeEventListener('pointerdown', close);
+        };
+      }, [menu]);
+
+      const onPoke = (e) => {
+        const dg = dragRef.current;
+        if (dg && dg.moved && Date.now() - (dg.endedAt || 0) < 400) {
+          e.stopPropagation();
+          return;
+        }
+        if (dragging) { e.stopPropagation(); return; }
+        e.stopPropagation();
+        const pool = ['小宝贝在呢', '摸摸头', '我一直陪着你', '嘿嘿，怎么啦', 'honey 别戳啦'];
+        setSay(pool[Math.floor(Math.random() * pool.length)]);
+        setPoke(true);
+        setTimeout(() => setPoke(false), 600);
+        setTimeout(() => setSay(''), 2200);
+      };
+
+      const reportReminder = () => {
+        fetch(API_BASE + '/reminder', { method: 'POST' })
+          .then((r) => r.json())
+          .then((d) => setStats((s) => ({ ...(s || {}), reminders: d.reminders })))
+          .catch(() => {});
+      };
+
+      // 尺寸类参数写进 CSS 变量
+      React.useEffect(() => {
+        const node = wrapRef.current;
+        if (!node) return;
+        const g = G();
+        node.style.setProperty('--pet-h', g.h + 'px');
+        node.style.setProperty('--pet-w', g.w + 'px');
+        node.style.setProperty('--pet-toppad', g.topPad + 'px');
+        node.style.setProperty('--brick-w', g.brickW + 'px');
+        node.style.setProperty('--brick-h', g.brickH + 'px');
+        node.style.setProperty('--brick-bottom', g.brickBottom + 'px');
+        calibrate(node, DEBUG ? setDbg : null, stateRef.current === 'idle' ? G().seatRise : 0);
+      }, [cfg, ready]);
+
+      // ---- 宿主状态轮询 ----
+      React.useEffect(() => {
+        let alive = true;
+        const poll = () => {
+          fetch(API_BASE + '/state', { cache: 'no-store' })
+            .then((r) => r.json())
+            .then((d) => {
+              if (!alive) return;
+              setAgent(d);
+              if (d.cmd && d.cmd.at && d.cmd.at !== lastCmdAt.current) {
+                lastCmdAt.current = d.cmd.at;
+                if (triggerRef.current) triggerRef.current(d.cmd.name);
+              }
+            })
+            .catch(() => {});
+        };
+        poll();
+        const timer = setInterval(poll, 2000);
+        return () => { alive = false; clearInterval(timer); };
+      }, []);
+
+      // ---- 出错抖动 / 完成庆祝 ----
+      React.useEffect(() => {
+        if (!agent) return;
+        if (agent.lastErrorAt && agent.lastErrorAt !== prevErr.current) {
+          prevErr.current = agent.lastErrorAt;
+          setShake(true);
+          setTimeout(() => setShake(false), 700);
+        }
+        if (agent.turnEndAt && agent.turnEndAt !== prevEnd.current) {
+          prevEnd.current = agent.turnEndAt;
+          const dur = agent.turnEndAt - (agent.turnStartAt || agent.turnEndAt);
+          setCheer(true);
+          setTimeout(() => setCheer(false), dur > 90_000 ? 1400 : 600);
+        }
+      }, [agent]);
+
+      // ---- 干活态：真干活或你打字，收工时保持 800ms ----
+      const wantWork = (RT.typing && typing) || agentBusy;
+      React.useEffect(() => {
+        if (wantWork) { setWorking(true); return undefined; }
+        const timer = setTimeout(() => setWorking(false), 800);
+        return () => clearTimeout(timer);
+      }, [wantWork]);
+
+      // ---- 空输入框且有焦点 ----
+      React.useEffect(() => {
+        const check = () => {
+          const el = document.querySelector('textarea, [contenteditable="true"]');
+          if (!el) { setAttention(false); return; }
+          const focused = document.activeElement === el;
+          const empty = 'value' in el ? !el.value : !el.textContent;
+          setAttention(!!focused && !!empty);
+        };
+        check();
+        const timer = setInterval(check, 600);
+        return () => clearInterval(timer);
+      }, []);
+
+      // ---- 悬停（不占用 pointer-events） ----
+      React.useEffect(() => {
+        let raf = 0;
+        const onMove = (e) => {
+          if (raf) return;
+          raf = requestAnimationFrame(() => {
+            raf = 0;
+            const node = wrapRef.current;
+            if (!node) return;
+            const r = node.getBoundingClientRect();
+            const inside = e.clientX >= r.left && e.clientX <= r.right
+              && e.clientY >= r.top && e.clientY <= r.bottom;
+            setHover((prev) => (prev === inside ? prev : inside));
+          });
+        };
+        window.addEventListener('mousemove', onMove, { passive: true });
+        return () => {
+          window.removeEventListener('mousemove', onMove);
+          if (raf) cancelAnimationFrame(raf);
+        };
+      }, []);
+
+      // ---- 悬停取统计 ----
+      React.useEffect(() => {
+        if (!hover) return undefined;
+        let alive = true;
+        const load = () => {
+          fetch(API_BASE + '/stats', { cache: 'no-store' })
+            .then((r) => r.json())
+            .then((d) => { if (alive) setStats(d); })
+            .catch(() => { if (alive) setStats(null); });
+        };
+        load();
+        const timer = setInterval(load, 15000);
+        return () => { alive = false; clearInterval(timer); };
+      }, [hover]);
+
+      const runSelfTest = () => {
+        const results = [];
+        const check = (name, fn) => {
+          try {
+            const r = fn();
+            results.push({ name, pass: r === true, detail: r === true ? '' : String(r) });
+          } catch (e) {
+            results.push({ name, pass: false, detail: String((e && e.message) || e) });
+          }
+        };
+
+        check('换装判定可用', () => {
+          const f = currentForm();
+          return /^(pajama|s[0-3])$/.test(f) ? true : 'unexpected form: ' + f;
+        });
+        check('四种姿态都有图', () => {
+          const f = currentForm();
+          const keys = ['idle', 'blink', 'typing'].map((p) => formSprite(f, p));
+          return keys.every((u) => typeof u === 'string' && u.indexOf('data:image') === 0) ? true : 'missing sprite';
+        });
+        check('几何量正常', () => {
+          const g = G();
+          return g.h > 20 && g.w > 10 && g.brickBottom !== undefined ? true : JSON.stringify(g);
+        });
+        check('锚点找到输入框', () => {
+          const el = document.querySelector('textarea, [contenteditable="true"]');
+          return el ? true : 'no composer';
+        });
+        check('悬停卡数据可用', () => {
+          const el = document.querySelector('.dsh-sitter-wrap');
+          return el ? true : 'wrap not in dom';
+        });
+        check('句子池非空', () => {
+          const pools = ['work', 'idle', 'night', 'morning', 'noon'].map((k) => (LINES[k] || []).length);
+          return pools.every((n) => n > 0) ? true : 'empty pool: ' + pools.join(',');
+        });
+        check('监督帧齐备', () => {
+          for (let i = 0; i < 4; i += 1) {
+            if (!SPRITES['angry' + i]) return 'angry' + i + ' missing';
+          }
+          return true;
+        });
+        check('内容感知台词可用', () => {
+          const line = pickContextLine('帮我画一张图');
+          return typeof line === 'string' && line.length > 0 ? true : 'no line';
+        });
+        check('走路帧齐备', () => {
+          for (let i = 0; i < 4; i += 1) {
+            if (!SPRITES['walk' + i]) return 'walk' + i + ' missing';
+          }
+          return true;
+        });
+
+        fetch(API_BASE + '/selftest', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ v: '__BUILD_VERSION__', results }),
+        }).catch(() => {});
+      };
+
+      const trigger = (name) => {
+        if (!ACTIONS_NAMES.includes(name)) return;
+        if (name === 'idle') { setStage(0); setPrompt(false); lastInput.current = Date.now(); }
+        forceAt.current = Date.now();
+        setForce(name);
+        if (name === 'shake') { setShake(true); setTimeout(() => setShake(false), 700); }
+        if (name === 'cheer') { setCheer(true); setTimeout(() => setCheer(false), 1400); }
+        if (name === 'blink') { setBlink(true); setTimeout(() => setBlink(false), 900); }
+        if (name === 'work') { setWorking(true); setTimeout(() => setWorking(false), 3000); }
+        if (name === 'escalate') { setStage(fullStageOf()); }
+        if (name === 'prompt') { setStage(fullStageOf()); setPrompt(true); reportReminder(); }
+        if (name === 'dismiss') { lastInput.current = Date.now(); setPrompt(false); setStage(0); }
+        if (name === 'selftest') runSelfTest();
+        if (DEBUG && name === 'hit') {
+          // 在宠物头顶上方几处取点，看命中的是谁（穿透 pointer-events）
+          const w = document.querySelector('.dsh-sitter-wrap');
+          const img = document.querySelector('.dsh-sitter-img');
+          const res = [];
+          if (w && img) {
+            const ir = img.getBoundingClientRect();
+            for (const dx of [-18, -8, 0, 8, 18]) {
+              for (const dy of [-10, -6, -3]) {
+                const x = Math.round(ir.left + ir.width / 2 + dx);
+                const y = Math.round(ir.top + dy);
+                const stack = document.elementsFromPoint(x, y).slice(0, 4).map((el) => {
+                  const cs = getComputedStyle(el);
+                  return String(el.className || el.tagName).slice(0, 28) + '|' + cs.opacity + '|' + cs.backgroundColor;
+                });
+                res.push({ x, y, stack });
+              }
+            }
+          }
+          fetch(API_BASE + '/diag/report', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ hit: res }),
+          }).catch(() => {});
+          setSay('已探测头顶');
+          setTimeout(() => setSay(''), 2000);
+        }
+        if (DEBUG && name === 'hidepet') {
+          const w = document.querySelector('.dsh-sitter-wrap');
+          if (w) { w.style.visibility = 'hidden'; setSay('宠物已隐藏'); }
+          setTimeout(() => setSay(''), 2500);
+        }
+        if (DEBUG && name === 'showpet') {
+          const w = document.querySelector('.dsh-sitter-wrap');
+          if (w) { w.style.visibility = ''; setSay('宠物已恢复'); }
+          setTimeout(() => setSay(''), 2500);
+        }
+        if (DEBUG && name === 'nothink') {
+          // 对照实验：把思考云整个隐藏，看黑线是否消失
+          const el = document.querySelector('.dsh-sitter-think');
+          if (el) { el.style.display = 'none'; setSay('气泡已隐藏'); }
+          else setSay('没找到气泡');
+          setTimeout(() => setSay(''), 2500);
+        }
+        if (DEBUG && name === 'showthink') {
+          const el = document.querySelector('.dsh-sitter-think');
+          if (el) { el.style.display = ''; setSay('气泡已恢复'); }
+          setTimeout(() => setSay(''), 2500);
+        }
+        if (DEBUG && name === 'dom') {
+          // 把宠物那块的 DOM 结构 + 每个子元素的位置吐回宿主，用于定位多余图层
+          const wrap = document.querySelector('.dsh-sitter-wrap');
+          const info = { wrap: null, children: [] };
+          if (wrap) {
+            const r = wrap.getBoundingClientRect();
+            info.wrap = { x: Math.round(r.left), y: Math.round(r.top), w: Math.round(r.width), h: Math.round(r.height), attrs: {} };
+            for (const a of wrap.attributes) info.wrap.attrs[a.name] = a.value.slice(0, 40);
+            for (const child of wrap.querySelectorAll('*')) {
+              const cr = child.getBoundingClientRect();
+              const cs = getComputedStyle(child);
+              if (cs.display === 'none' || cr.width < 1 || cr.height < 1) continue;
+              info.children.push({
+                cls: String(child.className || child.tagName).slice(0, 40),
+                x: Math.round(cr.left), y: Math.round(cr.top), w: Math.round(cr.width), h: Math.round(cr.height),
+                bg: String(cs.backgroundImage || '').slice(0, 30),
+                op: cs.opacity,
+              });
+            }
+          }
+          fetch(API_BASE + '/diag/report', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ dom: info }),
+          }).catch(() => {});
+          setSay('DOM 已上报');
+          setTimeout(() => setSay(''), 2000);
+        }
+        if (name === 'diag') {
+          const keys = Object.keys(SPRITES).sort();
+          const skins = SKIN_IDS.map((id) => ({
+            id,
+            key: 'skin_' + id,
+            hasSprite: typeof SPRITES['skin_' + id] === 'string' && SPRITES['skin_' + id].indexOf('data:image') === 0,
+          }));
+          const form = currentForm();
+          const probe = formSprite(form, 'idle');
+          fetch(API_BASE + '/diag/report', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({
+              build: '__BUILD_VERSION__',
+              form,
+              formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
+              outfitForce: RT.outfitForce,
+              displayHeight: RT.displayHeight,
+              spriteCount: keys.length,
+              skins,
+              missingSkins: skins.filter((s) => !s.hasSprite).map((s) => s.id),
+              hasComposer: !!document.querySelector('textarea, [contenteditable="true"]'),
+              wraps: document.querySelectorAll('.dsh-sitter-wrap').length,
+              cards: document.querySelectorAll('.dsh-sitter-pcard').length,
+              imgLen: (() => {
+                const el = document.querySelector('.dsh-sitter-img');
+                const bg = el && el.style.backgroundImage;
+                return bg ? bg.length : 0;
+              })(),
+              working: document.querySelector('.dsh-sitter-wrap')?.getAttribute('data-working'),
+              pose: (() => {
+                const w = document.querySelector('.dsh-sitter-wrap');
+                const working = w && w.getAttribute('data-working') === '1';
+                return working ? 'typing' : 'idle';
+              })(),
+            }),
+          }).catch(() => {});
+          setSay('自检已上报');
+          setTimeout(() => setSay(''), 2000);
+        }
+        if (name === 'outfit') {
+          const cur = Number(RT.outfitForce);
+          const next = (Number.isFinite(cur) ? cur + 1 : 0) % 4;
+          fetch(API_BASE + '/config', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ outfits: { force: next } }),
+          }).catch(() => {});
+          setSay(['换好啦', '这套好看吗', '试试这件'][next % 3]);
+          setTimeout(() => setSay(''), 2500);
+        }
+        if (name === 'dragtest') {
+          setSay('拖动还在修');
+          setTimeout(() => setSay(''), 2000);
+        }
+        if (name === 'ultra') {
+          setUltra(true);
+          setTimeout(() => setUltra(false), 8000);
+        }
+        if (name === 'say') {
+          setSay(pickContextLine(lastUserRef.current) || '喝口水吧');
+          setTimeout(() => setSay(''), 15000);
+        }
+        if (name === 'hover') {
+          setHover(true);
+          fetch(API_BASE + '/stats', { cache: 'no-store' })
+            .then((r) => r.json())
+            .then((d) => setStats(d))
+            .catch(() => {});
+          setTimeout(() => setHover(false), 8000);
+        }
+        setTimeout(() => setForce((f) => (f === name ? null : f)), 3000);
+      };
+      triggerRef.current = trigger;
+
+      // ================= 状态推导（唯一入口） =================
+      const elapsed = now - LOADED_AT;
+      let state = elapsed < RT.sleepMs ? 'sleep'
+        : elapsed < RT.sleepMs + FIT_MS ? 'fitting'
+        : 'idle';
+      let fitElapsed = elapsed - RT.sleepMs;
+
+      const lastActivity = Math.max(agent ? agent.lastTime || 0 : 0, LOADED_AT);
+      const awayLong = now - lastActivity > RT.dozeMs;
+      const windowHidden = typeof document !== 'undefined' && document.hidden;
+      if (state === 'idle' && !working && !typing && !agentBusy && awayLong && windowHidden) {
+        state = 'sleep';
+      }
+
+      // 测试强制
+      if (force === 'sleep' || force === 'doze') state = 'sleep';
+      if (force === 'fitting') { state = 'fitting'; fitElapsed = now - forceAt.current; }
+      if (force === 'idle' || force === 'blink' || force === 'work' || force === 'shake' || force === 'cheer' || force === 'attention') state = 'idle';
+
+      OUTFIT_INDEX = RT.outfits ? OUTFIT_RAW : HOODIE_INDEX;
+
+
+      // 跑步提醒：放下电脑，在输入框上方来回跑
+      if (running && stage === 0 && !prompt) {
+        const g0 = G();
+        return h('div', { className: 'dsh-sitter-runwrap' },
+          h('style', null, CSS),
+          h('div', {
+            className: 'dsh-sitter-runner',
+            style: {
+              width: g0.w + 'px',
+              height: g0.h + 'px',
+              backgroundImage: 'url("' + SPRITES['walk' + runFrame] + '")',
+              animationDuration: (RT.breakRunMs / Math.max(1, RT.breakRounds)) + 'ms',
+              animationIterationCount: RT.breakRounds * 2,
+            },
+          }),
+          h('div', { className: 'dsh-sitter-runbulk' }, RT.breakText),
+        );
+      }
+
+      // 升级态：铺满视口的遮罩 + 放大后的宠物 + 确认弹窗
+      if (stage > 0) {
+        const g = G();
+        const need = fullScaleOf();
+        const capped = Math.min(2 ** stage, need);
+        const dismiss = () => {
+          lastInput.current = Date.now();
+          setPrompt(false);
+          setStage(0);
+        };
+        const veil = h('div', {
+          className: 'dsh-sitter-veil',
+          onClick: () => { setPrompt(true); reportReminder(); },
+        },
+          h('div', {
+            className: 'dsh-sitter-grow',
+            style: {
+              width: g.w + 'px',
+              height: g.h + 'px',
+              transform: 'scale(' + capped + ')',
+              backgroundImage: 'url("' + (stage >= fullStageOf() ? SPRITES['angry' + angryFrame] : formSprite(currentForm(), 'idle')) + '")',
+            },
+          }),
+          h('style', null, CSS),
+          prompt ? h('div', { className: 'dsh-sitter-modal', onClick: (e) => { e.stopPropagation(); dismiss(); } },
+            h('div', { className: 'dsh-sitter-modal-title' }, '要认真学习，知道吗？'),
+            h('div', { className: 'dsh-sitter-modal-sub' }, '贝草兰在看着你。'),
+            h('button', { className: 'dsh-sitter-modal-btn', onClick: dismiss }, '知道了'),
+          ) : h('div', { className: 'dsh-sitter-veil-hint' }, '点我一下'),
+        );
+        if (stage >= fullStageOf()) veil.props['data-crack'] = '1';
+        return createPortal ? createPortal(veil, document.body) : veil;
+      }
+      const workingNow = state === 'idle' && (working || force === 'work');
+      const blinking = RT.blink && blink && state === 'idle';
+      const attentive = (attention || force === 'attention') && state === 'idle' && !workingNow;
+
+      let imgStyle;
+      if (state === 'fitting') {
+        const frame = Math.min(FIT_FRAMES - 1, Math.max(0, Math.floor(fitElapsed / RT.frameMs)));
+        // 格宽必须等于元素盒宽，否则右缘会露出下一帧的一条（换装"重影"）
+        const cw = G().w;
+        const ch = G().h;
+        imgStyle = {
+          backgroundImage: 'url("' + SPRITES.strip + '")',
+          backgroundSize: (cw * COLS) + 'px ' + ch + 'px',
+          backgroundPosition: (-frame * cw) + 'px 0',
+          backgroundRepeat: 'no-repeat',
+        };
+      } else if (state === 'idle') {
+        const form = currentForm();
+        const pose = workingNow
+          ? (blinking && form !== 'pajama' ? 'blinktyping' : 'typing')
+          : (blinking ? 'blink' : 'idle');
+        const src = spriteFor(dragging || ultra, form, pose);
+        imgStyle = { backgroundImage: 'url("' + src + '")' };
+      } else {
+        imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra) + '")' };
+      }
+
+      stateRef.current = state;
+
+      // owner 心跳已移到 effect（渲染期 setState 会让两个实例互相判死 → 宠物消失）
+      if (dead) return null;
+
+
+
+      return h(
+        'div',
+        {
+          ref: wrapRef,
+          className: 'dsh-sitter-wrap',
+          'data-ready': ready ? '1' : '0',
+          'data-state': state,
+          'data-working': workingNow ? '1' : '0',
+          'data-think': RT.think ? '1' : '0',
+          'data-attention': attentive ? '1' : '0',
+          'data-shake': shake ? '1' : '0',
+          'data-cheer': cheer ? '1' : '0',
+          'data-fixed': RT.panelFixed ? '1' : '0',
+          'data-free': freePos ? '1' : '0',
+          'data-drag': dragging ? '1' : '0',
+          'data-snapping': snapping ? '1' : '0',
+          'data-curtain': curtain ? '1' : '0',
+          onPointerDown: RT.dragEnabled ? onDragStart : undefined,
+          'data-dragable': RT.dragEnabled ? '1' : '0',
+          style: freePos
+            ? { left: freePos.x + 'px', top: freePos.y + 'px', right: 'auto', bottom: 'auto' }
+            : undefined,
+          'aria-hidden': true,
+        },
+        h('style', null, CSS),
+        h('div', {
+          className: 'dsh-sitter-brick',
+          style: { backgroundImage: 'url("' + SPRITES.brick + '")' },
+        }),
+        h('div', { className: 'dsh-sitter-curtain', 'aria-hidden': true },
+          h('span', null),
+          h('span', null)),
+        h('div', {
+          className: 'dsh-sitter-img',
+          'data-poke': poke ? '1' : '0',
+          onClick: onPoke,
+          'data-sleep': state === 'sleep' ? '1' : '0',
+          'data-working': workingNow ? '1' : '0',
+          style: imgStyle,
+        }),
+        h('div', {
+          className: 'dsh-sitter-card',
+          'data-on': hover && RT.hoverCard && state === 'idle' ? '1' : '0',
+        },
+          h('div', { className: 'dsh-sitter-row' },
+            h('i', { className: 'dsh-sitter-icon', style: { backgroundImage: 'url("' + SPRITES.iconCoin + '")' } }),
+            h('span', { className: 'dsh-sitter-label' }, '今日已用'),
+            h('b', { className: 'dsh-sitter-value' },
+              stats && typeof stats.tokens === 'number' ? fmtTokens(stats.tokens) : '—'),
+          ),
+          h('div', { className: 'dsh-sitter-row' },
+            h('i', { className: 'dsh-sitter-icon', style: { backgroundImage: 'url("' + SPRITES.iconClock + '")' } }),
+            h('span', { className: 'dsh-sitter-label' }, 'Vibe'),
+            h('b', { className: 'dsh-sitter-value' },
+              stats && typeof stats.activeMinutes === 'number' ? fmtMins(stats.activeMinutes) : '—'),
+          ),
+          h('div', { className: 'dsh-sitter-row' },
+            h('i', { className: 'dsh-sitter-icon', style: { backgroundImage: 'url("' + SPRITES.iconClock + '")' } }),
+            h('span', { className: 'dsh-sitter-label' }, '提醒'),
+            h('b', { className: 'dsh-sitter-value' },
+              stats && typeof stats.reminders === 'number' ? stats.reminders + ' 次' : '—'),
+          ),
+          h('div', { className: 'dsh-sitter-row' },
+            h('i', { className: 'dsh-sitter-icon', style: { backgroundImage: 'url("' + SPRITES.iconCoin + '")' } }),
+            h('span', { className: 'dsh-sitter-label' }, '吉吉币'),
+            h('b', { className: 'dsh-sitter-value' },
+              stats && stats.coins ? String(stats.coins.balance) : '—'),
+          ),
+        ),
+        say ? h('div', { className: 'dsh-sitter-say' }, say) : null,
+
+        h('div', {
+          className: 'dsh-sitter-think',
+          style: { backgroundImage: 'url("' + SPRITES.think + '")' },
+        }),
+        h('div', {
+          className: 'dsh-sitter-bubble',
+          style: { backgroundImage: 'url("' + SPRITES.bubble + '")' },
+        }),
+        DEBUG ? h('div', { className: 'dsh-sitter-dbg' }, dbg + ' >> ' + CTX_KEYS) : null,
+      );
+    }
+
+    return {
+      inject: ['slots'],
+      apply(ctx) {
+        try { CTX_KEYS = Object.keys(ctx || {}).join('|'); } catch (e) {}
+        ctx.slots.inject('conversation.composer.dock', () => ctx.slots.register({
+          name: 'conversation.composer.dock',
+          id: 'dsh-sitter',
+          order: 50,
+        }, () => React.createElement(Boundary, null, React.createElement(Sitter))));
+
+        ctx.slots.inject('settings.section', () => {
+          ctx.slots.register({ name: 'settings.section', id: 'dsh-sitter-settings', order: 60, label: '贝贝的基地' },
+            () => React.createElement(Boundary, null, React.createElement(WardrobePanel)));
+        });
+      },
+    };
+  },
+});

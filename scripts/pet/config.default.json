@@ -1,0 +1,71 @@
+{
+  "displayHeight": 83,
+  "embedHeight": 180,
+  "embedHeightSmall": 64,
+  "debug": false,
+  "outfits": {
+    "count": 4,
+    "hoodieIndex": 1,
+    "force": null,
+    "seasonMode": "season"
+  },
+  "timeline": {
+    "sleepMs": 30000,
+    "frameMs": 380,
+    "blinkMs": 130,
+    "blinkMinGapMs": 3500,
+    "blinkMaxGapMs": 6500,
+    "typingHoldMs": 900,
+    "workHoldMs": 800,
+    "dozeMs": 1800000
+  },
+  "layout": {
+    "initialLift": 26,
+    "seatInset": -6,
+    "topPad": 30,
+    "freeLeft": null,
+    "freeTop": null,
+    "dragEnabled": true
+  },
+  "brick": {
+    "height": 20,
+    "overlap": 4,
+    "sink": 3
+  },
+  "seat": {
+    "buttRatio": 0.38
+  },
+  "features": {
+    "blink": true,
+    "typing": true,
+    "workLink": true,
+    "hoverCard": true,
+    "think": true,
+    "outfits": true,
+    "pacifier": true
+  },
+  "resetAt": 0,
+  "escalate": {
+    "enabled": true,
+    "idleMs": 180000,
+    "stepMs": 10000
+  },
+  "night": {
+    "from": 23,
+    "to": 7
+  },
+  "break": {
+    "enabled": true,
+    "workMs": 2400000,
+    "runMs": 7000,
+    "rounds": 3,
+    "text": "小宝贝，歇一会儿眼睛吧～"
+  },
+  "chat": {
+    "enabled": true,
+    "intervalMs": 75000,
+    "durationMs": 4500,
+    "quietFrom": 1,
+    "quietTo": 7
+  }
+}
