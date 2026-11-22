@@ -145,75 +145,139 @@ window.__ModuleLoader__.load({
     const CELL_RATIO = 1.0;
     const INITIAL_LIFT = 26;
     const DEBUG = false;
-    // 台词池：不调用模型，零 token；按时段/状态挑，尽量不重复
+    // ───────────────── 台词系统（零 token，全部本地） ─────────────────
+    // 组织方式：按「场景」分组，每组 10+ 句；称呼从 CALL 里轮换，不每句都"小宝贝"。
+    // 选句统一走 pickFrom()，带最近 8 句去重。
+    const CALL = ['小宝贝', '小宝宝', 'honey', '你'];
+
     const LINES = {
-      work: [
-        '小宝贝专心，我在呢',
-        '别急，慢慢来',
-        '这段写得真好',
-        '累了就靠一下',
-        '小宝宝加油',
-      ],
+      // 无事时的陪伴
       idle: [
-        '小宝贝，喝口水吧',
-        'honey，歇一下眼睛',
-        '我一直在这儿',
-        '想你了',
-        '写累了就伸个懒腰',
+        '小宝贝，喝口水吧', 'honey，眼睛歇一下', '我一直在这儿', '想你了',
+        '写累了就伸个懒腰', '慢慢来，不着急', '要不要摸摸头', '坐你旁边，安静看着',
+        '今天也辛苦啦', '有我在呢', '肩膀放松一点', '记得眨眼睛',
       ],
-      night: [
-        '小宝贝，早点睡',
-        '再写十分钟就休息好不好',
-        '困了就去睡，我守着',
-        '晚安，做个好梦',
+      // 你在忙
+      work: [
+        '小宝贝专心，我在呢', '别急，慢慢来', '这段写得真好', '累了就靠一下',
+        '小宝宝加油', '我帮你看着时间', '写了挺久了，手腕动一动',
+        '你这速度有点吓人', '专心的人最好看', '我在旁边不出声',
       ],
       morning: [
-        '早上好呀小宝贝',
-        '新的一天，慢慢来',
-        '早安 honey，今天也会顺顺利利的',
+        '早上好呀小宝贝', '新的一天，慢慢来', '早安 honey，今天也会顺顺利利的',
+        '早饭吃了吗', '开局先喝水', '今天先做最要紧的那件',
       ],
       noon: [
-        '小宝宝吃饭了没',
-        '中午眯十分钟吧',
-        '记得喝水呀',
+        '小宝宝吃饭了没', '中午眯十分钟吧', '记得喝水呀', '别边吃边改代码',
+        '午休一下，下午更清醒', '胃比进度重要',
+      ],
+      night: [
+        '小宝贝，早点睡', '再写十分钟就休息好不好', '困了就去睡，我守着',
+        '晚安，做个好梦', '夜里凉，披件衣服', '别熬了，明天再收尾',
+      ],
+      late: [
+        '这个点了…去睡吧', '凌晨的活明天做也来得及', '我陪你到这儿，睡吧',
+        '灯关了，眼睛会累', '夜里写的东西，明早再看一遍',
+      ],
+      // 很久没人理
+      alone: [
+        '还在吗', '我等你回来', '没人理我，我就趴一会儿',
+        '喂…看我一眼', '我先睡啦，醒了叫我', '有事记得喊我',
+      ],
+      // 戳它
+      poke: [
+        '小宝贝在呢', '摸摸头', '我一直陪着你', '嘿嘿，怎么啦', 'honey 别戳啦',
+        '痒', '再戳就贴你脸上', '嗯？需要我做什么', '戳我一次，开心一下',
+      ],
+      // 事件：任务完成
+      done: [
+        '干得漂亮', '这一轮收工啦', '要不要奖励自己一下', '又推进了一点',
+        '辛苦啦，揉揉肩', '我记了一笔，你很稳',
+      ],
+      // 事件：出错
+      error: [
+        '别急，我陪你想', '不是你的错，慢慢来', '先看日志，别慌',
+        '错一次说明在往前走', '深呼吸，我们一起排',
+      ],
+      // 事件：学习监督
+      remind: [
+        '要认真学习，知道吗？', '别让我一直盯着你', '说好的专心呢',
+        '先把这一页看完', '我数到三哦',
+      ],
+      // 事件：换装
+      outfit: [
+        '换好啦', '这套好看吗', '试试这件', '再换一套',
+        '这身挺适合你', '我照镜子觉得自己还行',
+      ],
+      // 事件：睡醒
+      wake: [
+        '唔…我再醒醒', '睡饱了', '梦见你在写论文', '你回来啦',
+        '我打了个盹，现在精神了',
       ],
     };
 
-    // 按最近一条用户消息挑台词（零 token）
+    /** 最近说过的，去重（池子不够时不强求） */
+    const RECENT = [];
+    function pickFrom(poolName) {
+      const pool = LINES[poolName] || LINES.idle;
+      const fresh = pool.filter(function (x) { return RECENT.indexOf(x) < 0; });
+      const list = fresh.length ? fresh : pool;
+      const text = list[Math.floor(Math.random() * list.length)];
+      RECENT.push(text);
+      if (RECENT.length > 8) RECENT.shift();
+      return text;
+    }
+
+    /** 按时段挑池子：凌晨和深夜分开，语气不同 */
+    function timePool() {
+      const hh = new Date().getHours();
+      if (hh >= 2 && hh < 5) return 'late';
+      if (hh >= 23 || hh < 2) return 'night';
+      if (hh < 11) return 'morning';
+      if (hh < 14) return 'noon';
+      return 'idle';
+    }
+
+    function pickLine() {
+      return pickFrom(timePool());
+    }
+
+    /**
+     * 内容感知：不再是"第一条命中的正则"，改成**打分制**。
+     * 分越高越优先；同分随机。这样"帮我画一张图"不会因为含"帮我"先命中别的规则。
+     */
     const CONTEXT_RULES = [
-      { re: /生图|画图|出图|配图|立绘|画.{0,2}[张只幅]|画一/i, lines: ['又要画图啦，真厉害', '小宝贝画的都好看'] },
-      { re: /报错|错误|失败|崩|error|exception|traceback/i, lines: ['别急，我陪你想', '不是你的错，慢慢来'] },
-      { re: /论文|文献|引用|摘要|实验|数据|统计/i, lines: ['写得真好，慢慢来', '这段逻辑很清楚'] },
-      { re: /Stata|回归|do文件|面板数据|内生性/i, lines: ['跑这么久，先歇会儿', '小宝宝辛苦了'] },
-      { re: /插件|代码|函数|接口|重构|bug/i, lines: ['小宝贝写得真快', '这段要不要抽成函数'] },
-      { re: /桌宠|宠物|贝草兰/i, lines: ['在说我吗，嘿嘿', '我一直都在呀'] },
-      { re: /困|累|睡|休息|熬夜/i, lines: ['去睡吧，我守着', '别熬坏了，心疼'] },
+      { pool: 'error', w: 100, re: /报错|错误|失败|崩了|挂了|异常|不生效|traceback|exception|\berror\b|超时|没反应|白屏/i },
+      { pool: 'work', w: 30, re: /画图|出图|生图|配图|立绘|illustration|plot|作图/i },
+      { pool: 'work', w: 30, re: /论文|文献|摘要|投稿|审稿|引用|参考文献|manuscript/i },
+      { pool: 'work', w: 28, re: /回归|面板数据|内生性|stata|did|iv|稳健性|聚类/i },
+      { pool: 'work', w: 26, re: /数据|统计|显著|p\s*值|置信区间|样本量|方差/i },
+      { pool: 'work', w: 30, re: /ppt|汇报|答辩|幻灯片|slides|开题|结题/i },
+      { pool: 'work', w: 28, re: /代码|函数|接口|重构|插件|脚本|编译|部署|bug/i },
+      { pool: 'work', w: 24, re: /实验|测样|上机|跑一遍|批次|样本|试剂/i },
+      { pool: 'work', w: 22, re: /文献|下载|doi|pubmed|google scholar/i },
+      { pool: 'idle', w: 20, re: /桌宠|宠物|贝草兰|贝贝/i },
+      { pool: 'night', w: 26, re: /熬夜|通宵|睡不着|好晚|几点了/i },
+      { pool: 'idle', w: 22, re: /累|困|饿|喝|吃|休息|头疼/i },
+      { pool: 'work', w: 18, re: /测试|验证|对比|复现|重跑/i },
     ];
 
     function pickContextLine(text) {
       if (!text) return null;
+      const hits = [];
       for (const rule of CONTEXT_RULES) {
-        if (rule.re.test(text)) {
-          return rule.lines[Math.floor(Math.random() * rule.lines.length)];
-        }
+        if (rule.re.test(text)) hits.push(rule);
       }
-      return null;
+      if (!hits.length) return null;
+      const maxW = Math.max.apply(null, hits.map(function (r) { return r.w; }));
+      const top = hits.filter(function (r) { return r.w === maxW; });
+      const rule = top[Math.floor(Math.random() * top.length)];
+      return pickFrom(rule.pool);
     }
 
-    function pickLine(prev) {
-      const h = new Date().getHours();
-      let pool;
-      if (h >= RT.chatQuietFrom && h < RT.chatQuietTo) return null;
-      if (h >= 23 || h < 2) pool = LINES.night;
-      else if (h < 11) pool = LINES.morning;
-      else if (h < 14) pool = LINES.noon;
-      else pool = LINES.idle;
-      const all = pool.concat(LINES.idle, LINES.work);
-      let text = all[Math.floor(Math.random() * all.length)];
-      for (let i = 0; i < 4 && text === prev; i += 1) {
-        text = all[Math.floor(Math.random() * all.length)];
-      }
-      return text;
+    /** 称呼轮换（需要在句子里插称呼时用） */
+    function callName() {
+      return CALL[Math.floor(Math.random() * CALL.length)];
     }
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
@@ -1170,6 +1234,24 @@ window.__ModuleLoader__.load({
       const workMsRef = React.useRef(0);
       const lastTickRef = React.useRef(Date.now());
       const lastInput = React.useRef(Date.now());
+      const busyRef = React.useRef(false);
+
+      /** 说一句（统一入口：去重 + 自动收起） */
+      const sayOnce = (poolName, holdMs) => {
+        const line = pickFrom(poolName);
+        if (!line) return;
+        lastSayRef.current = line;
+        setSay(line);
+        window.setTimeout(() => setSay(''), holdMs || RT.chatDurationMs);
+      };
+      /** 事件型台词：同类事件 45 秒内只播一次，避免刷屏 */
+      const evtAtRef = React.useRef({});
+      const sayEvent = (key, poolName, holdMs) => {
+        const nowTs = Date.now();
+        if (nowTs - (evtAtRef.current[key] || 0) < 45000) return;
+        evtAtRef.current[key] = nowTs;
+        sayOnce(poolName, holdMs);
+      };
 
       hoverRef.current = hover;
       stageRef.current = stage;
@@ -1437,7 +1519,7 @@ window.__ModuleLoader__.load({
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-194110' }),
+            body: JSON.stringify({ v: '20261122-194440' }),
           }).catch(() => {});
         };
         beacon();
@@ -1472,16 +1554,20 @@ window.__ModuleLoader__.load({
         return () => clearInterval(timer);
       }, [running]);
 
-      // 主动碎碎念：按距上次说话的时长判断，配置改了立即生效
+      // 主动碎碎念：间隔带随机；你在忙就更安静，很久没人理就更黏
       React.useEffect(() => {
         let last = Date.now();
+        let need = RT.chatIntervalMs;
         const timer = setInterval(() => {
           if (!RT.chatEnabled) return;
           if (stageRef.current > 0 || runningRef.current) return;
           const nowTs = Date.now();
-          if (nowTs - last < RT.chatIntervalMs) return;
-          const ctxLine = Math.random() < 0.55 ? pickContextLine(lastUserRef.current) : null;
-          const line = ctxLine || pickLine(lastSayRef.current);
+          if (nowTs - last < need) return;
+          const alone = nowTs - lastInput.current > 120000;
+          need = Math.round(RT.chatIntervalMs * (0.75 + Math.random() * 0.6) * (busyRef.current ? 1.7 : 1) * (alone ? 0.7 : 1));
+          // 60% 优先看你最后一条消息，其余走时段池
+          const ctxLine = Math.random() < 0.6 ? pickContextLine(lastUserRef.current) : null;
+          const line = ctxLine || pickLine();
           if (!line) { last = nowTs; return; }
           last = nowTs;
           lastSayRef.current = line;
@@ -1490,6 +1576,11 @@ window.__ModuleLoader__.load({
         }, 1500);
         return () => clearInterval(timer);
       }, []);
+
+      // 刚睡醒：说一句
+      React.useEffect(() => {
+        if (priorStateRef.current === 'sleep' && state === 'idle') sayEvent('wake', 'wake', 3000);
+      }, [now]);
 
       // ---- 运行时配置 ----
       const loadConfig = () => {
@@ -1720,8 +1811,7 @@ window.__ModuleLoader__.load({
         }
         if (dragging) { e.stopPropagation(); return; }
         e.stopPropagation();
-        const pool = ['小宝贝在呢', '摸摸头', '我一直陪着你', '嘿嘿，怎么啦', 'honey 别戳啦'];
-        setSay(pool[Math.floor(Math.random() * pool.length)]);
+        sayOnce('poke', 2200);
         setPoke(true);
         setTimeout(() => setPoke(false), 600);
         setTimeout(() => setSay(''), 2200);
@@ -1775,6 +1865,7 @@ window.__ModuleLoader__.load({
         if (agent.lastErrorAt && agent.lastErrorAt !== prevErr.current) {
           prevErr.current = agent.lastErrorAt;
           setShake(true);
+          sayEvent('error', 'error', 3200);
           setTimeout(() => setShake(false), 700);
         }
         if (agent.turnEndAt && agent.turnEndAt !== prevEnd.current) {
@@ -1782,6 +1873,7 @@ window.__ModuleLoader__.load({
           const dur = agent.turnEndAt - (agent.turnStartAt || agent.turnEndAt);
           setCheer(true);
           setTimeout(() => setCheer(false), dur > 90_000 ? 1400 : 600);
+          sayEvent('done', 'done', 3200);
         }
       }, [agent]);
 
@@ -1900,7 +1992,7 @@ window.__ModuleLoader__.load({
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-194110', results }),
+          body: JSON.stringify({ v: '20261122-194440', results }),
         }).catch(() => {});
       };
 
@@ -1914,7 +2006,7 @@ window.__ModuleLoader__.load({
         if (name === 'blink') { setBlink(true); setTimeout(() => setBlink(false), 900); }
         if (name === 'work') { setWorking(true); setTimeout(() => setWorking(false), 3000); }
         if (name === 'escalate') { setStage(fullStageOf()); }
-        if (name === 'prompt') { setStage(fullStageOf()); setPrompt(true); reportReminder(); }
+        if (name === 'prompt') { setStage(fullStageOf()); setPrompt(true); reportReminder(); sayEvent('remind', 'remind', 6000); }
         if (name === 'dismiss') { lastInput.current = Date.now(); setPrompt(false); setStage(0); }
         if (name === 'selftest') runSelfTest();
         if (DEBUG && name === 'hit') {
@@ -2005,7 +2097,7 @@ window.__ModuleLoader__.load({
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-194110',
+              build: '20261122-194440',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
@@ -2051,8 +2143,7 @@ window.__ModuleLoader__.load({
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ outfits: { force: next } }),
           }).catch(() => {});
-          setSay(['换好啦', '这套好看吗', '试试这件'][next % 3]);
-          setTimeout(() => setSay(''), 2500);
+          sayOnce('outfit', 2500);
         }
         if (name === 'dragtest') {
           setSay('拖动还在修');
@@ -2063,7 +2154,8 @@ window.__ModuleLoader__.load({
           setTimeout(() => setUltra(false), 8000);
         }
         if (name === 'say') {
-          setSay(pickContextLine(lastUserRef.current) || '喝口水吧');
+          const line = pickContextLine(lastUserRef.current) || pickLine();
+          setSay(line || '喝口水吧');
           setTimeout(() => setSay(''), 15000);
         }
         if (name === 'hover') {
@@ -2170,6 +2262,7 @@ window.__ModuleLoader__.load({
         imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra) + '")' };
       }
 
+      busyRef.current = !!(working || agentBusy);
       priorStateRef.current = stateRef.current;
       stateRef.current = state;
       const lay = LAY();
