@@ -905,25 +905,42 @@ function todaySpecial(now) {
 }
 
 /* 学习提醒到顶：用当前皮肤本体摇头，配一个红色怒标 */
-.dsh-sitter-grow[data-angry='1'] { animation: dshSitterNuh 420ms steps(2) infinite; }
-@keyframes dshSitterNuh {
-  0%   { transform: scale(var(--grow-s, 1)) rotate(-4deg); }
-  50%  { transform: scale(var(--grow-s, 1)) rotate(4deg); }
-  100% { transform: scale(var(--grow-s, 1)) rotate(-4deg); }
-}
-.dsh-sitter-veil[data-angry='1']::after {
-  content: '💢';
+/* 生气到顶：脚下烧起熊熊大火（跟皮肤无关，统一效果） */
+.dsh-sitter-fire {
   position: absolute;
-  margin-top: -140px;
-  margin-left: 96px;
-  font-size: 34px;
-  filter: drop-shadow(0 2px 0 rgba(0, 0, 0, 0.18));
-  animation: dshAngryPop 900ms ease-in-out infinite;
+  left: 50%;
+  bottom: -4%;
+  width: 78%;
+  height: 30%;
+  transform: translateX(-50%);
+  pointer-events: none;
+  filter: blur(0.4px);
 }
-@keyframes dshAngryPop {
-  0%, 100% { transform: scale(1) rotate(-6deg); opacity: 0.95; }
-  50% { transform: scale(1.16) rotate(6deg); opacity: 1; }
+.dsh-sitter-fire i {
+  position: absolute;
+  bottom: 0;
+  border-radius: 50% 50% 22% 22% / 64% 64% 36% 36%;
+  transform-origin: 50% 100%;
+  mix-blend-mode: screen;
 }
+.dsh-sitter-fire i:nth-child(1) {
+  left: 2%; width: 34%; height: 62%;
+  background: radial-gradient(circle at 50% 78%, #fff2b0 0%, #ffb03a 42%, #ff5a1f 74%, rgba(200,40,0,0) 100%);
+  animation: dshFireA 620ms ease-in-out infinite;
+}
+.dsh-sitter-fire i:nth-child(2) {
+  left: 33%; width: 40%; height: 100%;
+  background: radial-gradient(circle at 50% 80%, #fffbe0 0%, #ffc94d 38%, #ff6a24 72%, rgba(190,30,0,0) 100%);
+  animation: dshFireB 520ms ease-in-out infinite;
+}
+.dsh-sitter-fire i:nth-child(3) {
+  right: 2%; width: 34%; height: 66%;
+  background: radial-gradient(circle at 50% 78%, #fff2b0 0%, #ffa82e 44%, #ff4a12 76%, rgba(200,40,0,0) 100%);
+  animation: dshFireC 700ms ease-in-out infinite;
+}
+@keyframes dshFireA { 0%,100% { transform: scaleY(0.82) rotate(-3deg); opacity: .9; } 50% { transform: scaleY(1.06) rotate(2deg); opacity: 1; } }
+@keyframes dshFireB { 0%,100% { transform: scaleY(1.0) rotate(2deg); opacity: .95; } 50% { transform: scaleY(1.18) rotate(-2deg); opacity: 1; } }
+@keyframes dshFireC { 0%,100% { transform: scaleY(0.88) rotate(3deg); opacity: .88; } 50% { transform: scaleY(1.0) rotate(-3deg); opacity: 1; } }
 
 .dsh-sitter-gift {
   /* 略微向外溢出：思考云/耳朵在挂件区边缘，遮不满会露头 */
@@ -2689,6 +2706,7 @@ function todaySpecial(now) {
         },
           h('div', {
             className: 'dsh-sitter-grow',
+            'data-angry': stage >= fullStageOf() ? '1' : '0',
             style: {
               width: g.w + 'px',
               height: g.h + 'px',
@@ -2697,7 +2715,11 @@ function todaySpecial(now) {
               // 改成：始终用当前皮肤的本体，只靠 CSS 抖动 + 红色怒标表达生气。
               backgroundImage: 'url("' + formSprite(displayForm, 'idle') + '")',
             },
-          }),
+          },
+            stage >= fullStageOf()
+              ? h('div', { className: 'dsh-sitter-fire', 'aria-hidden': true }, h('i', null), h('i', null), h('i', null))
+              : null,
+          ),
           h('style', null, CSS),
           prompt ? h('div', { className: 'dsh-sitter-modal', onClick: (e) => { e.stopPropagation(); dismiss(); } },
             h('div', { className: 'dsh-sitter-modal-title' }, '要认真学习，知道吗？'),
