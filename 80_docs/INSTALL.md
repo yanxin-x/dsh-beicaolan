@@ -50,10 +50,10 @@ plugin_manager install_bundle
 ```
 plugin_manager set_plugin  enable   → 关
 plugin_manager set_plugin  enable   → 开
-然后对 DSH 主窗口按 Ctrl + R
+然后对 DSH 主窗口按 **F5**
 ```
 
-> ⚠️ **插件开关本身不会重新加载页面侧的 client.js**。不按 Ctrl+R 你会一直看到旧版本，而且表现为"我改了没生效"——这是本项目最容易踩的坑，排查过至少 3 次。
+> ⚠️ **插件开关本身不会重新加载页面侧的 client.js**。不按 **F5** 你会一直看到旧版本，而且表现为"我改了没生效"——这是本项目最容易踩的坑，排查过至少 3 次。
 
 ---
 
@@ -142,7 +142,7 @@ python scripts/make_sitter_plugin.py     # 缺哪张报哪张
 
 | 现象 | 原因 | 处理 |
 |---|---|---|
-| 改了没生效 | 页面还在跑旧的 client.js | 关开插件 + **Ctrl+R** |
+| 改了没生效 | 页面还在跑旧的 client.js | 关开插件 + ****F5**** |
 | 宠物不出现 | 插件没启用 / 插槽没注册 | 看 `client-error.log`；`check_client.mjs` 能看到插槽注册 |
 | 宠物不跟着打字 | `features.workLink` 关了，或长会话读不到事件 | 开 `workLink`；宿主已做 tail 窗口自适应 |
 | 应用突然重启 | 宿主未捕获异常 | 看 `handler-error.log`；命令通道已有 `once()` 保护，回归过 20/20 |

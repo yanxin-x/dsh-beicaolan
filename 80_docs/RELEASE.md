@@ -1,5 +1,10 @@
 # 发布记录
 
+> **桌面端怎么让插件生效：按 F5。**
+> 实测（DSH 桌面版 0.2.x）：程序化发送 Ctrl+R 能重载，但用户手动按 Ctrl+R 无效；
+> **F5 手动按是有效的**（页面里的 build 号会变）。装完/更新完请按 F5。
+
+
 ## v1.0.0（定稿）
 
 | 项 | 值 |
@@ -18,7 +23,7 @@
 帮我装个桌宠插件：plugin_manager 的 install_bundle，
 target 用这个：
 git+https://github.com/yanxin-x/dsh-beicaolan.git#v1.0.0&path:/dsh-sitter
-装完把插件启用，然后对主窗口按 Ctrl+R。
+装完把插件启用，然后对主窗口按 **F5**。
 ```
 
 `path:/dsh-sitter` 不能省——仓库根是开发工程，插件包在子目录。
@@ -32,10 +37,10 @@ plugin_manager set_plugin  target=include:dsh-sitter  enabled=false
 plugin_manager remove_bundle target=<旧包名>
 plugin_manager install_bundle target=git+https://github.com/yanxin-x/dsh-beicaolan.git#v1.0.0&path:/dsh-sitter
 plugin_manager set_plugin  target=include:dsh-sitter  enabled=true
-然后 Ctrl+R
+然后按 **F5**
 ```
 
-> ⚠️ **插件开关本身不会重载页面侧模块**，不按 Ctrl+R 会一直看到旧版本。
+> ⚠️ **插件开关本身不会重载页面侧模块**，不按 **F5** 会一直看到旧版本。
 > 这是本项目最容易踩的坑，排查过至少 3 次。
 
 ### 装完之后看到什么
