@@ -116,7 +116,12 @@ window.__ModuleLoader__.load({
         chatDurationMs: c.chat?.durationMs ?? RT.chatDurationMs,
         chatQuietFrom: c.chat?.quietFrom ?? RT.chatQuietFrom,
         chatQuietTo: c.chat?.quietTo ?? RT.chatQuietTo,
-        outfitForce: c.outfits?.force ?? null,
+        // 只有当上层**明确带了** outfits.force 时才改动；否则保留当前值。
+        // 之前是 `c.outfits?.force ?? null`，面板切换奶嘴时发的局部配置不含 outfits，
+        // 皮肤就被清空、掉回"按季节自动"，看起来就是随机跳皮肤。
+        outfitForce: (c.outfits && Object.prototype.hasOwnProperty.call(c.outfits, 'force'))
+          ? (c.outfits.force === null ? null : c.outfits.force)
+          : RT.outfitForce,
         seasonMode: c.outfits?.seasonMode ?? RT.seasonMode,
         panelSide: c.panel?.corner === 'bottom-left' ? 'left' : 'right',
         panelMarginX: c.panel?.marginX ?? RT.panelMarginX,
@@ -1074,7 +1079,7 @@ window.__ModuleLoader__.load({
       const [pacifier, setPacifier] = React.useState(true);
 
       const patchCfg = (body) => {
-        fetch('http://127.0.0.1:43717/config', {
+        fetch(API_BASE + '/config', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify(body),
@@ -1086,11 +1091,11 @@ window.__ModuleLoader__.load({
       const [err, setErr] = React.useState('');
 
       const load = () => {
-        fetch('http://127.0.0.1:43717/skins', { cache: 'no-store' })
+        fetch(API_BASE + '/skins', { cache: 'no-store' })
           .then((r) => r.json())
           .then((d) => { setSkins(d); setCoins(d.coins); setErr(''); })
           .catch((e) => setErr('接口失败: ' + String(e && e.message || e)));
-        fetch('http://127.0.0.1:43717/config', { cache: 'no-store' })
+        fetch(API_BASE + '/config', { cache: 'no-store' })
           .then((r) => r.json())
           .then((d) => { setSize(d.displayHeight); setPacifier(d.features?.pacifier !== false); })
           .catch(() => {});
@@ -1099,7 +1104,7 @@ window.__ModuleLoader__.load({
       React.useEffect(() => { load(); }, []);
 
       const equip = (id) => {
-        fetch('http://127.0.0.1:43717/skins/equip', {
+        fetch(API_BASE + '/skins/equip', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ id }),
@@ -1110,7 +1115,7 @@ window.__ModuleLoader__.load({
       };
 
       const buy = (id) => {
-        fetch('http://127.0.0.1:43717/skins/buy', {
+        fetch(API_BASE + '/skins/buy', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ id }),
@@ -1119,7 +1124,7 @@ window.__ModuleLoader__.load({
 
       const setSizeTo = (v) => {
         setSize(v);
-        fetch('http://127.0.0.1:43717/config', {
+        fetch(API_BASE + '/config', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
           body: JSON.stringify({ displayHeight: v }),
@@ -1517,7 +1522,16 @@ window.__ModuleLoader__.load({
           const patch = e && e.detail;
           if (!patch) return;
           applyConfig(patch);
-          setCfg((old) => ({ ...(old || {}), ...patch }));
+          setCfg((old) => {
+            const next = { ...(old || {}) };
+            for (const k of Object.keys(patch || {})) {
+              const v = patch[k];
+              next[k] = (v && typeof v === 'object' && !Array.isArray(v))
+                ? { ...(next[k] || {}), ...v }
+                : v;
+            }
+            return next;
+          });
         };
         window.addEventListener('dsh-sitter:cfg', onCfg);
         return () => window.removeEventListener('dsh-sitter:cfg', onCfg);
