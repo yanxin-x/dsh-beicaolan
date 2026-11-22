@@ -73,7 +73,7 @@ window.__ModuleLoader__.load({
       sleepTop: DEFAULTS.layout?.sleepBubble?.top ?? 0.39,
       sleepSize: DEFAULTS.layout?.sleepBubble?.size ?? 0.17,
       typingFrameMs: DEFAULTS.timeline?.typingFrameMs ?? 220,
-      curtainMs: DEFAULTS.outfits?.curtainMs ?? 250,
+      giftFrameMs: DEFAULTS.outfits?.giftFrameMs ?? 90,
     };
 
     function applyConfig(c) {
@@ -137,7 +137,7 @@ window.__ModuleLoader__.load({
         sleepTop: c.layout?.sleepBubble?.top ?? RT.sleepTop,
         sleepSize: c.layout?.sleepBubble?.size ?? RT.sleepSize,
         typingFrameMs: c.timeline?.typingFrameMs ?? RT.typingFrameMs,
-        curtainMs: c.outfits?.curtainMs ?? RT.curtainMs,
+        giftFrameMs: c.outfits?.giftFrameMs ?? RT.giftFrameMs,
       });
     }
 
@@ -216,9 +216,9 @@ window.__ModuleLoader__.load({
       return text;
     }
 
-    const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'fitting', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
+    const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = __OUTFIT_COUNT__;
-    const CURTAIN_CLOSE_MS = 250;   // 门从开到关的时长，必须与 CSS 的 transition 一致
+    const GIFT_FRAMES = 8;          // 礼物盒帧表格数（4 列 x 2 行）
     const HOODIE_INDEX = __HOODIE_INDEX__;
 
     /**
@@ -448,10 +448,7 @@ window.__ModuleLoader__.load({
       });
     }
 
-    // 只有目标是卫衣时条带才播完整 8 格（最后一格就是卫衣）；
-    // 其它衣服播到「帘子全闭」就切走，观众自然理解成在帘子后面换的。
-    const FIT_FRAMES = OUTFIT_INDEX === HOODIE_INDEX ? COLS : 6;
-    const FIT_MS = RT.frameMs * FIT_FRAMES;
+    // 试衣间 8 格条带已废弃（换装改由左右双开门转场完成）
     const fmtTokens = (n) => {
       if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
       if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
@@ -512,39 +509,16 @@ window.__ModuleLoader__.load({
 .dsh-sitter-wrap[data-free='1'] { animation: none !important; z-index: 30; }
 /* 换装：左右两扇小木门往中间关。门是 CSS 画的（木头纹 + 天蓝小窗 + 金色心形把手），
    比之前上下压的两块布更像"衣柜"，也更可爱。 */
-.dsh-sitter-curtain { position: absolute; left: 0; right: 0; top: 0; bottom: 0; pointer-events: none; z-index: 6; }
-.dsh-sitter-curtain span {
-  position: absolute; top: 0; bottom: 0; width: 52%;
-  background:
-    linear-gradient(90deg, rgba(0,0,0,.16), rgba(0,0,0,0) 26%, rgba(255,255,255,.22) 62%, rgba(0,0,0,.14)),
-    repeating-linear-gradient(90deg, #d9a24a 0 9px, #cf9740 9px 10px),
-    #d9a24a;
-  box-shadow: inset 0 0 0 2px #8a5a22, inset 0 0 0 3px #b5813a, inset 0 0 12px rgba(90,50,10,.32);
-  transition: transform var(--curtain-ms, 250ms) cubic-bezier(.34, 1.2, .44, 1);
-  will-change: transform;
+/* 换装转场：礼物盒逐帧动画（打包 -> 换装 -> 拆封）。
+   帧图是完整的一整张（不需要透明），直接当遮挡层铺满整个挂件区域。 */
+.dsh-sitter-gift {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  background-repeat: no-repeat;
+  border-radius: 10px;
+  z-index: 9;
+  pointer-events: none;
 }
-.dsh-sitter-curtain span:first-child { left: 0; border-radius: 7px 4px 4px 7px; transform: translateX(-101%); }
-.dsh-sitter-curtain span:last-child  { right: 0; border-radius: 4px 7px 7px 4px; transform: translateX(101%); }
-/* 小窗 */
-.dsh-sitter-curtain span::before {
-  content: ''; position: absolute; left: 50%; top: 16%;
-  width: 54%; height: 30%; transform: translateX(-50%);
-  background:
-    linear-gradient(90deg, transparent 47%, #8a5a22 47% 53%, transparent 53%),
-    linear-gradient(180deg, #bfe8f5 0%, #8fcede 100%);
-  border: 2px solid #8a5a22; border-radius: 10px 10px 3px 3px;
-  box-shadow: inset 0 -3px 0 rgba(255,255,255,.45);
-}
-/* 心形把手：装在靠中间那侧的门边 */
-.dsh-sitter-curtain span::after {
-  content: '♥'; position: absolute; top: 52%;
-  font: 11px/1 ui-monospace, Consolas, monospace; color: #ffd34d;
-  text-shadow: 0 0 1px #6b4315, 0 1px 0 #6b4315;
-}
-.dsh-sitter-curtain span:first-child::after { right: 5px; }
-.dsh-sitter-curtain span:last-child::after  { left: 5px; }
-.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:first-child { transform: translateX(0); }
-.dsh-sitter-wrap[data-curtain='1'] .dsh-sitter-curtain span:last-child  { transform: translateX(0); }
 .dsh-sitter-wrap[data-snapping='1'] { transition: left 180ms ease-out, top 180ms ease-out; }
 .dsh-sitter-wrap[data-drag='1'] .dsh-sitter-brick { opacity: 0; }
 .dsh-sitter-wrap[data-drag='1'] {
@@ -1182,8 +1156,8 @@ window.__ModuleLoader__.load({
       const ultraFrameRef = React.useRef(0);
       const [freePos, setFreePos] = React.useState(null);
       const [snapping, setSnapping] = React.useState(false);
-      const [curtain, setCurtain] = React.useState(false);
-      const curtainRef = React.useRef({ form: null, timer: 0, timer2: 0 });
+      const [giftFrame, setGiftFrame] = React.useState(-1);   // -1 = 不显示
+      const giftRef = React.useRef({ form: null, timer: 0 });
       // 屏幕上实际显示的形态：只有"门关上"时才更新，避免看到换装瞬间
       const [displayForm, setDisplayForm] = React.useState(() => currentForm());
       // 上一帧的状态：用来判断"是不是刚从睡觉醒过来"
@@ -1425,26 +1399,35 @@ window.__ModuleLoader__.load({
         return () => window.clearInterval(tick);
       }, []);
 
-      // 换装转场：门先关 -> 门合上的那一帧才换图 -> 再开门（这样你看不到"啪"地一下换装）
-      // 从睡觉醒过来时不播这段门：那是"起床"，不是"换衣服"。
+      // 换装转场：礼物盒打包 -> 完全遮住的那一帧换装 -> 拆封
+      // 从睡觉醒过来时不播（那是起床，不是换衣服）；首次加载也不播。
       React.useEffect(() => {
         const target = currentForm();
-        if (target === curtainRef.current.form) return;
-        const firstTime = curtainRef.current.form === null;
+        if (target === giftRef.current.form) return;
+        const firstTime = giftRef.current.form === null;
         const wokeUp = priorStateRef.current === 'sleep';
-        clearTimeout(curtainRef.current.timer);
-        clearTimeout(curtainRef.current.timer2);
-        curtainRef.current.form = target;
+        clearTimeout(giftRef.current.timer);
+        giftRef.current.form = target;
         if (firstTime || wokeUp) {
           setDisplayForm(target);
-          setCurtain(false);
+          setGiftFrame(-1);
           return;
         }
-        setCurtain(true);
-        // 关门 250ms；在门合上的那一刻换图，人眼看不到切换
-        const ms = Math.max(120, Math.min(5000, RT.curtainMs || 250));
-        curtainRef.current.timer = window.setTimeout(() => setDisplayForm(target), ms);
-        curtainRef.current.timer2 = window.setTimeout(() => setCurtain(false), ms + 60);
+        const frames = GIFT_FRAMES;
+        const ms = Math.max(40, Math.min(400, RT.giftFrameMs || 90));
+        let f = 0;
+        const wrapUp = () => {
+          if (f < frames) { setGiftFrame(f); f += 1; giftRef.current.timer = window.setTimeout(wrapUp, ms); return; }
+          setDisplayForm(target);                       // 最后一帧完全遮住时换装
+          setGiftFrame(frames - 1);
+          giftRef.current.timer = window.setTimeout(unwrap, ms * 3);
+        };
+        const unwrap = () => {
+          f -= 1;
+          if (f >= 0) { setGiftFrame(f); giftRef.current.timer = window.setTimeout(unwrap, ms); return; }
+          setGiftFrame(-1);
+        };
+        giftRef.current.timer = window.setTimeout(wrapUp, ms);
       }, [cfg, force, working]);
 
       // 上报客户端版本：定期上报，便于确认线上跑的是哪一版
@@ -1759,7 +1742,6 @@ window.__ModuleLoader__.load({
         node.style.setProperty('--pet-h', g.h + 'px');
         node.style.setProperty('--pet-w', g.w + 'px');
         node.style.setProperty('--pet-toppad', LAY().band + 'px');
-        node.style.setProperty('--curtain-ms', (RT.curtainMs || 250) + 'ms');
         node.style.setProperty('--brick-w', g.brickW + 'px');
         node.style.setProperty('--brick-h', g.brickH + 'px');
         node.style.setProperty('--brick-bottom', g.brickBottom + 'px');
@@ -2098,10 +2080,8 @@ window.__ModuleLoader__.load({
 
       // ================= 状态推导（唯一入口） =================
       const elapsed = now - LOADED_AT;
-      let state = elapsed < RT.sleepMs ? 'sleep'
-        : elapsed < RT.sleepMs + FIT_MS ? 'fitting'
-        : 'idle';
-      let fitElapsed = elapsed - RT.sleepMs;
+      let state = elapsed < RT.sleepMs ? 'sleep' : 'idle';
+      let fitElapsed = 0;   // 试衣间条带已废弃，保留变量避免大改
 
       const lastActivity = Math.max(agent ? agent.lastTime || 0 : 0, LOADED_AT);
       const awayLong = now - lastActivity > RT.dozeMs;
@@ -2112,8 +2092,7 @@ window.__ModuleLoader__.load({
 
       // 测试强制
       if (force === 'sleep' || force === 'doze') state = 'sleep';
-      if (force === 'fitting') { state = 'fitting'; fitElapsed = now - forceAt.current; }
-      if (force === 'idle' || force === 'blink' || force === 'work' || force === 'shake' || force === 'cheer' || force === 'attention') state = 'idle';
+            if (force === 'idle' || force === 'blink' || force === 'work' || force === 'shake' || force === 'cheer' || force === 'attention') state = 'idle';
 
       OUTFIT_INDEX = RT.outfits ? OUTFIT_RAW : HOODIE_INDEX;
 
@@ -2175,18 +2154,7 @@ window.__ModuleLoader__.load({
       const attentive = (attention || force === 'attention') && state === 'idle' && !workingNow;
 
       let imgStyle;
-      if (state === 'fitting') {
-        const frame = Math.min(FIT_FRAMES - 1, Math.max(0, Math.floor(fitElapsed / RT.frameMs)));
-        // 格宽必须等于元素盒宽，否则右缘会露出下一帧的一条（换装"重影"）
-        const cw = G().w;
-        const ch = G().h;
-        imgStyle = {
-          backgroundImage: 'url("' + SPRITES.strip + '")',
-          backgroundSize: (cw * COLS) + 'px ' + ch + 'px',
-          backgroundPosition: (-frame * cw) + 'px 0',
-          backgroundRepeat: 'no-repeat',
-        };
-      } else if (state === 'idle') {
+      if (state === 'idle') {
         const form = displayForm;
         // 打字两帧：按 typingFrameMs 交替。第二帧是构建期从第一帧派生的 _f2，
         // 所以每套皮肤/每个季节都自动有同一节奏的"手在敲"，不用逐张出图。
@@ -2227,7 +2195,6 @@ window.__ModuleLoader__.load({
           'data-free': freePos ? '1' : '0',
           'data-drag': dragging ? '1' : '0',
           'data-snapping': snapping ? '1' : '0',
-          'data-curtain': curtain ? '1' : '0',
           onPointerDown: RT.dragEnabled ? onDragStart : undefined,
           'data-dragable': RT.dragEnabled ? '1' : '0',
           style: freePos
@@ -2237,9 +2204,10 @@ window.__ModuleLoader__.load({
         },
         h('style', null, CSS),
         h(SeatBrick, { lay }),
-        h('div', { className: 'dsh-sitter-curtain', 'aria-hidden': true },
-          h('span', null),
-          h('span', null)),
+        giftFrame >= 0 ? h('div', {
+          className: 'dsh-sitter-gift',
+          style: { backgroundImage: 'url("' + (SPRITES['gift' + giftFrame] || '') + '")' },
+        }) : null,
         h('div', {
           className: 'dsh-sitter-img',
           'data-poke': poke ? '1' : '0',

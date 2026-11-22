@@ -8,7 +8,7 @@
     "hoodieIndex": 1,
     "force": null,
     "seasonMode": "season",
-    "curtainMs": 250
+    "giftFrameMs": 90
   },
   "timeline": {
     "sleepMs": 30000,

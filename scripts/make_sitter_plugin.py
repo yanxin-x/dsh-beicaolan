@@ -48,8 +48,6 @@ BASE = ROOT / 'assets'
 GEN = BASE / '_gen'
 SMALL = CFG['embedHeightSmall']
 
-META = json.loads((BASE / 'fitting_meta.json').read_text(encoding='utf-8'))
-COLS = META['cols']
 
 # 素材清单：key -> (相对路径, 嵌入高度)
 
@@ -57,11 +55,19 @@ COLS = META['cols']
 # 形态（皮肤）贴图不在这里 —— 全部由 scripts/pet/skins.json 驱动，见下方 SKINS/FORMS。
 PROPS = {
     'sleep': (BASE / 'sleep_dino.png', EMBED_H),
-    'strip': (BASE / 'fitting_strip.png', EMBED_H),
     'brick': (BASE / 'gold_brick.png', SMALL),
     # think_cloud.png 的小尾巴在素材底部就被裁掉了（画到最后一行为止），
     # 所以用完整版 think_cloud_clean.png（无尾巴，底部留有余量）。
     'think': (BASE / 'think_cloud_clean.png', 52),
+    'gift0': (BASE / 'gift' / f'gift_frame_0.png', 180),
+    'gift1': (BASE / 'gift' / f'gift_frame_1.png', 180),
+    'gift2': (BASE / 'gift' / f'gift_frame_2.png', 180),
+    'gift3': (BASE / 'gift' / f'gift_frame_3.png', 180),
+    'gift4': (BASE / 'gift' / f'gift_frame_4.png', 180),
+    'gift5': (BASE / 'gift' / f'gift_frame_5.png', 180),
+    'gift6': (BASE / 'gift' / f'gift_frame_6.png', 180),
+    'gift7': (BASE / 'gift' / f'gift_frame_7.png', 180),
+
     'bubble': (GEN / 'bubble.png', SMALL),
     'iconCoin': (BASE / 'icon_coin.png', SMALL),
     'iconClock': (BASE / 'icon_clock.png', SMALL),
@@ -324,7 +330,7 @@ def _flatten_hair_top(img):
     return img
 
 
-def embed(path: Path, height: int, dy: int = 0):
+def embed(path: Path, height: int, dy: int = 0, canvas_on: bool = True):
     """加载素材，缩放到目标高度后统一贴到同一画布（底部居中），再转 base64。
 
     dy > 0 时把整张画布下移 dy 像素、底部裁掉——用于派生「打字第二帧」。
@@ -334,7 +340,7 @@ def embed(path: Path, height: int, dy: int = 0):
     if img.height != height:
         w = max(1, round(img.width * height / img.height))
         img = img.resize((w, height), Image.LANCZOS)
-    if height >= 120:                      # 角色贴图统一画布（道具 52/64 不参与）
+    if canvas_on and height >= 120:        # 角色贴图统一画布（道具/礼物盒不参与）
         canvas = Image.new('RGBA', (PET_CANVAS_W, height + TOP_MARGIN), (0, 0, 0, 0))
         x = (PET_CANVAS_W - img.width) // 2
         if x < 0:
@@ -397,7 +403,8 @@ def main() -> int:
         if not path.exists():
             print(f'[skip] {key}: 缺少 {path}')
             continue
-        b64, w, h = embed(path, height)
+        is_gift = key.startswith('gift')
+        b64, w, h = embed(path, height, canvas_on=not is_gift)
         encoded[key] = f'data:image/png;base64,{b64}'
 
     # 形态贴图：统一 key <form>.<pose>.<pac>
@@ -448,8 +455,8 @@ def main() -> int:
               .replace('__RATIO__', f'{max_ratio:.4f}')
               .replace('__SLEEP_MS__', str(SLEEP_MS))
               .replace('__FRAME_MS__', str(FRAME_MS))
-              .replace('__COLS__', str(COLS))
-              .replace('__CELL_RATIO__', f'{META["cell"][0] / META["cell"][1]:.4f}')
+              .replace('__COLS__', '8')
+              .replace('__CELL_RATIO__', '1.0')
               .replace('__OUTFIT_COUNT__', str(OUTFIT_COUNT))
               .replace('__HOODIE_INDEX__', str(HOODIE_INDEX))
               .replace('__LIFT__', str(INITIAL_LIFT))
@@ -506,7 +513,7 @@ def main() -> int:
     if icon_src.exists():
         (PLUGIN / 'icon.png').write_bytes(icon_src.read_bytes())
 
-    print(f'插件已生成: {PLUGIN}  显示 {disp_w}x{DISPLAY_H}px  {COLS} 帧 x {FRAME_MS}ms')
+    print(f'plugin: {PLUGIN}  display {disp_w}x{DISPLAY_H}px')
     return 0
 
 
