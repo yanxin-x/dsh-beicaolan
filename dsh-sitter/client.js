@@ -1868,7 +1868,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-205603' }),
+            body: JSON.stringify({ v: '20261122-205933' }),
           }).catch(() => {});
         };
         beacon();
@@ -2114,28 +2114,39 @@ function todaySpecial(now) {
         if (!b) return;
         const { node, pr } = b;
         const nr = node.getBoundingClientRect();
-        dragRef.current = { dx: e.clientX - nr.left, dy: e.clientY - nr.top, startX: e.clientX, startY: e.clientY, moved: false };
-        setFreePos({ x: Math.round(nr.left - pr.left), y: Math.round(nr.top - pr.top) });
-        setDragging(true);
-        try { node.setPointerCapture && node.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+        // 关键：这里**不**立刻进入拖拽态，也不提前设 freePos。
+        // 否则一次普通单击会被 onPoke 的 `if (dragging) return` 吃掉（爱心永远不涨），
+        // 而且宠物会莫名其妙从吸附变成自由漂浮。
+        // 真正的拖拽要等指针移动超过 6px 才激活。
+        dragRef.current = { dx: e.clientX - nr.left, dy: e.clientY - nr.top, startX: e.clientX, startY: e.clientY, moved: false, armed: true };
       };
 
       React.useEffect(() => {
-        if (!dragging) return undefined;
-        const tick = setInterval(() => { ultraFrameRef.current += 1; }, 220);
-
         const move = (e) => {
           if (e.buttons !== undefined && (e.buttons & 1) === 0) return;
           const d = dragRef.current;
-          if (!d) return;
-          if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 6) d.moved = true;
+          if (!d || !d.armed) return;
+          if (Math.abs(e.clientX - d.startX) + Math.abs(e.clientY - d.startY) > 6) {
+            if (!d.moved) {
+              d.moved = true;
+              const b = parentBox();
+              if (b) setFreePos({ x: Math.round(b.node.getBoundingClientRect().left - b.pr.left), y: Math.round(b.node.getBoundingClientRect().top - b.pr.top) });
+              setDragging(true);
+              try { b && b.node.setPointerCapture && b.node.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+            }
+          } else {
+            return;
+          }
           const m = magnetEdges(e.clientX - d.dx, e.clientY - d.dy);
           setFreePos(clampViewport(m.x, m.y));
         };
 
         const up = () => {
           const d = dragRef.current;
-          if (d && d.moved) d.endedAt = Date.now();
+          if (!d || !d.armed) return;
+          d.armed = false;
+          if (!d.moved) return;          // 没移动过 = 单击，交给 onClick 处理
+          d.endedAt = Date.now();
           setDragging(false);
           setFreePos((pos) => {
             if (!pos) return pos;
@@ -2156,7 +2167,6 @@ function todaySpecial(now) {
         window.addEventListener('pointermove', move);
         window.addEventListener('pointerup', up);
         return () => {
-          clearInterval(tick);
           window.removeEventListener('pointermove', move);
           window.removeEventListener('pointerup', up);
         };
@@ -2398,7 +2408,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-205603', results }),
+          body: JSON.stringify({ v: '20261122-205933', results }),
         }).catch(() => {});
       };
 
@@ -2503,7 +2513,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-205603',
+              build: '20261122-205933',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
