@@ -101,7 +101,7 @@ SKIN_CATALOG = [
 FORMS_META = [
     {'id': f['id'], 'label': f['label'], 'kind': f['kind'],
      'months': f.get('months') or [], 'rotateIndex': f.get('rotateIndex'),
-     'seat': f.get('seat')}
+     'seat': f.get('seat'), 'voice': f.get('voice') or 'base'}
     for f in FORMS
 ]
 
@@ -360,9 +360,92 @@ def embed(path: Path, height: int, dy: int = 0, canvas_on: bool = True):
     return base64.b64encode(buf.getvalue()).decode('ascii'), img.width, img.height
 
 
+
+# ───────── 素材规范校验：不合规就当场报出来，绝不静默歪掉 ─────────
+# 规范（新皮肤必须满足）：
+#   1. PNG，带透明通道（RGBA）
+#   2. 高度不限（构建时统一缩到 180 高、贴到 300 宽画布居中）
+#   3. 人物"脚底"贴画布底边（最后一行必须有像素）——这是坐姿对位的基准
+#   4. 不戴奶嘴版（nopac_*）必须真的和戴奶嘴版不同
+#   5. 每个形态的 typing 必须有"真·第二帧"（typingblink_* 且变化 >= 2%），
+#      否则构建会用位移凑 —— 用户已明确拒绝这种做法
+FORM_POSES = ('idle', 'blink', 'typing')
+CARRIER_HEIGHT = EMBED_H * 0  # 占位，避免误用
+
+
+def _alpha_rows(path):
+    im = Image.open(path).convert('RGBA')
+    px = im.load()
+    rows = []
+    for y in range(im.height):
+        rows.append(any(px[x, y][3] > 20 for x in range(im.width)))
+    return im, rows
+
+
+def validate_assets():
+    """返回 (errors, warns)。errors 会阻止构建。"""
+    errors, warns = [], []
+    seen = {}
+    for form in FORMS:
+        fid = form['id']
+        sprites = form.get('sprites') or {}
+        for pose in FORM_POSES:
+            variants = sprites.get(pose) or {}
+            if not variants:
+                warns.append(f"{fid}.{pose}: 没有任何素材（会回退到 idle）")
+                continue
+            for pac, rel in variants.items():
+                path = BASE / rel
+                if not path.exists():
+                    errors.append(f"{fid}.{pose}.{pac}: 缺文件 assets/{rel}")
+                    continue
+                seen[(fid, pose, pac)] = path
+                try:
+                    im, rows = _alpha_rows(path)
+                except Exception as e:
+                    errors.append(f"{fid}.{pose}.{pac}: 读不了 {rel} ({e})")
+                    continue
+                if im.mode != 'RGBA':
+                    warns.append(f"{fid}.{pose}.{pac}: 不是 RGBA（透明底）")
+                if not rows[-1] and im.height >= 120:
+                    warns.append(f"{fid}.{pose}.{pac}: 最后一行没有像素 → 脚底没贴底边")
+        # 不戴奶嘴必须真的不同
+        for pose in FORM_POSES:
+            variants = sprites.get(pose) or {}
+            if 'pac' in variants and 'nopac' in variants:
+                a, b = seen.get((fid, pose, 'pac')), seen.get((fid, pose, 'nopac'))
+                if a and b:
+                    try:
+                        ia = Image.open(a).convert('RGBA'); ib = Image.open(b).convert('RGBA')
+                        if ia.size == ib.size:
+                            diff = ImageChops.difference(ia, ib)
+                            if diff.getbbox() is None:
+                                errors.append(f"{fid}.{pose}.nopac: 与戴奶嘴版逐像素相同 → 根本没去奶嘴")
+                    except Exception:
+                        pass
+        # 打字第二帧必须是真素材
+        tv = sprites.get('typing') or {}
+        for pac, rel in tv.items():
+            partner = _blink_partner(rel)
+            if not partner or not _is_second_frame(partner):
+                warns.append(f"{fid}.typing.{pac}: 没有真·第二帧（现在会用位移凑）")
+    return errors, warns
+
+
 def main() -> int:
-    # ---- 素材健全性校验：挡住空白帧/异常帧 ----
-    from PIL import Image
+    # ---- 规范校验：先按"新皮肤规范"逐项检查，不合规当场报 ----
+    spec_errors, spec_warns = validate_assets()
+    if spec_warns:
+        print(f'[规范] {len(spec_warns)} 条警告：')
+        for w in spec_warns[:40]:
+            print('   -', w)
+        if len(spec_warns) > 40:
+            print(f'   ... 还有 {len(spec_warns) - 40} 条')
+    if spec_errors:
+        print(f'[规范] {len(spec_errors)} 条错误（必须修）：')
+        for e in spec_errors:
+            print('   !', e)
+        raise SystemExit('素材不符合规范，拒绝构建')
 
     def ink_ratio(path):
         im = Image.open(path).convert('RGBA')

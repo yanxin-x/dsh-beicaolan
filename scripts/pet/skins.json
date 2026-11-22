@@ -29,7 +29,8 @@
           "pac": "typing0.png",
           "nopac": "nopac_typing_s0.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "s1",
@@ -54,7 +55,8 @@
           "pac": "typing1.png",
           "nopac": "nopac_typing_s1.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "s2",
@@ -79,7 +81,8 @@
           "pac": "typing2.png",
           "nopac": "nopac_typing_s2.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "s3",
@@ -104,7 +107,8 @@
           "pac": "typing3.png",
           "nopac": "nopac_typing_s3.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "pajama",
@@ -122,7 +126,8 @@
         "typing": {
           "pac": "pajama2.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "caveman",
@@ -148,7 +153,8 @@
           "nopac": "nopac_typing_caveman.png"
         }
       },
-      "seat": 0.3
+      "seat": 0.3,
+      "voice": "caveman"
     },
     {
       "id": "muscle",
@@ -173,7 +179,8 @@
           "pac": "typing_muscle.png",
           "nopac": "nopac_typing_muscle.png"
         }
-      }
+      },
+      "voice": "muscle"
     },
     {
       "id": "wolf",
@@ -198,7 +205,8 @@
           "pac": "typing_wolf.png",
           "nopac": "nopac_typing_wolf.png"
         }
-      }
+      },
+      "voice": "beast"
     },
     {
       "id": "fox",
@@ -223,7 +231,8 @@
           "pac": "typing_fox.png",
           "nopac": "nopac_typing_fox.png"
         }
-      }
+      },
+      "voice": "beast"
     },
     {
       "id": "bear",
@@ -248,7 +257,8 @@
           "pac": "typing_bear.png",
           "nopac": "nopac_typing_bear.png"
         }
-      }
+      },
+      "voice": "beast"
     },
     {
       "id": "cat",
@@ -273,7 +283,8 @@
           "pac": "typing_cat.png",
           "nopac": "nopac_typing_cat.png"
         }
-      }
+      },
+      "voice": "beast"
     },
     {
       "id": "genderbend",
@@ -298,7 +309,8 @@
           "pac": "typing_genderbend.png",
           "nopac": "nopac_typing_genderbend.png"
         }
-      }
+      },
+      "voice": "base"
     },
     {
       "id": "snake",
@@ -323,7 +335,8 @@
           "pac": "typing_snake.png",
           "nopac": "nopac_typing_snake.png"
         }
-      }
+      },
+      "voice": "snake"
     },
     {
       "id": "dragon",
@@ -348,7 +361,8 @@
           "pac": "typing_dragon.png",
           "nopac": "nopac_typing_dragon.png"
         }
-      }
+      },
+      "voice": "dragon"
     },
     {
       "id": "whale",
@@ -373,7 +387,8 @@
           "pac": "typing_whale.png",
           "nopac": "nopac_typing_whale.png"
         }
-      }
+      },
+      "voice": "whale"
     },
     {
       "id": "qipao",
@@ -398,7 +413,8 @@
           "pac": "typing_qipao.png",
           "nopac": "nopac_typing_qipao.png"
         }
-      }
+      },
+      "voice": "qipao"
     },
     {
       "id": "ultra",
@@ -423,7 +439,8 @@
           "pac": "typing_ultra.png",
           "nopac": "nopac_typing_ultra.png"
         }
-      }
+      },
+      "voice": "ultra"
     }
   ]
 }

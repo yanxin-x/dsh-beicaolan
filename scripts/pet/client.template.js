@@ -216,10 +216,66 @@ window.__ModuleLoader__.load({
       ],
     };
 
+    // ───────── 人设语气：每个形态可以说"自己那套"的话 ─────────
+    // 原则：**都是同一个陪伴你的好男友**，只是带一点各自的出身感。
+    // 只覆盖最常出现的三个池子（idle/work/poke），其余场景仍走公共池。
+    const VOICE = {
+      caveman: {
+        idle: ['唔…喝水', '骨头，好看', '小宝贝，火暖', '我守着洞口'],
+        work: ['咚咚！写！', '累？趴我背上', '你写，我打猎'],
+        poke: ['唔！', '戳我，痒', '摸头，可以'],
+      },
+      beast: {
+        idle: ['蹭蹭', '尾巴借你抱', '耳朵听见你心跳', '窝在你这儿'],
+        work: ['我趴着陪你', '爪子轻一点', '别怕，我耳朵尖'],
+        poke: ['喵…别戳耳', '呜，摸头', '再摸一下'],
+      },
+      muscle: {
+        idle: ['喝水，必须喝', '我扛着，你写', '别硬撑', '肩膀借你靠'],
+        work: ['干得漂亮', '累了就喊我', '我在这儿挡着'],
+        poke: ['哈，戳我干嘛', '力气活我来', '笑一个'],
+      },
+      snake: {
+        idle: ['凉一点，舒服吧', '我看着你', '慢慢来，不急'],
+        work: ['别绷太紧', '我盘在这儿', '一口气，慢慢呼'],
+        poke: ['嘶…别碰尾巴', '凉不凉', '过来一点'],
+      },
+      dragon: {
+        idle: ['灯下有我', '龙的守夜', '你写，我看着'],
+        work: ['笔落如雨，好', '倦了便说', '我替你挡住'],
+        poke: ['胆敢戳龙', '摸角要收费', '咳…再来'],
+      },
+      whale: {
+        idle: ['海水一样慢', '我在深处等你', '呼吸，跟我'],
+        work: ['一呼一吸', '慢慢游', '我托着你'],
+        poke: ['噗…水花', '别戳鳍', '好痒'],
+      },
+      ultra: {
+        idle: ['光在你这边', '我随时待命', '专注，就是力量'],
+        work: ['继续保持', '能量充足', '我掩护你'],
+        poke: ['收到！', '别闹，在执行任务', '……有点痒'],
+      },
+      qipao: {
+        idle: ['喝口茶吧', '灯下慢慢写', '我陪你到收工'],
+        work: ['写得真好', '手腕歇一歇', '不急，慢慢来'],
+        poke: ['呀…', '别闹啦', '摸摸头可以'],
+      },
+    };
+
+    /** 当前形态的人设（渲染时更新，供 pickFrom 使用） */
+    let CUR_VOICE = 'base';
+    function voiceOf(formId) {
+      const f = FORMS.find(function (x) { return x.id === formId; });
+      return (f && f.voice) || 'base';
+    }
+
     /** 最近说过的，去重（池子不够时不强求） */
     const RECENT = [];
     function pickFrom(poolName) {
-      const pool = LINES[poolName] || LINES.idle;
+      // 65% 用它自己那套人设台词（如果这个场景有），否则走公共池
+      const vp = VOICE[CUR_VOICE] && VOICE[CUR_VOICE][poolName];
+      const useVoice = vp && vp.length && Math.random() < 0.65;
+      const pool = (useVoice ? vp : (LINES[poolName] || LINES.idle));
       const fresh = pool.filter(function (x) { return RECENT.indexOf(x) < 0; });
       const list = fresh.length ? fresh : pool;
       const text = list[Math.floor(Math.random() * list.length)];
@@ -2262,6 +2318,7 @@ window.__ModuleLoader__.load({
         imgStyle = { backgroundImage: 'url("' + spriteSleep(dragging || ultra) + '")' };
       }
 
+      CUR_VOICE = voiceOf(displayForm);
       busyRef.current = !!(working || agentBusy);
       priorStateRef.current = stateRef.current;
       stateRef.current = state;
