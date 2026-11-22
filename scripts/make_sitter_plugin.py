@@ -195,7 +195,7 @@ BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
 # 开发者版：本地检出直接用 SITTER_DEV=1 构建，版本号带 -dev 后缀、界面带角标。
 # 发布版（推 tag 的那份）不带后缀，用户装到的就是干净版本。
 BUILD_IS_DEV = os.environ.get('SITTER_DEV') == '1'
-PLUGIN_VERSION = '1.0.3' if not BUILD_IS_DEV else '1.0.3-dev'
+PLUGIN_VERSION = '1.0.4' if not BUILD_IS_DEV else '1.0.4-dev'
 
 
 DETAIL_DOC = """# 贝草兰 · 桌上陪伴
@@ -263,7 +263,7 @@ INDEX = (PET / 'host.template.js').read_text(encoding='utf-8')
 
 # 角色贴图统一画布：宽度固定，角色底部居中。
 # 换装 / 切奶嘴 / 换姿势时几何完全一致，不会缩放跳变、不会边缘残留。
-PET_CANVAS_W = 300
+PET_CANVAS_W = round(EMBED_H * 1.667)   # 画布宽度随内联高度等比放大，保证显示比例不变
 
 # 「打字第二帧」的纵向位移量（贴完画布后的像素，画布高 EMBED_H=180）。
 # 显示高度 82px 时 1 canvas px ≈ 0.46 屏幕 px，所以要 8 才看得出来（≈3.7px）。

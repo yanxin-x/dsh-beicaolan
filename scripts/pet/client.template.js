@@ -961,7 +961,7 @@ function todaySpecial(now) {
   background-repeat: no-repeat;
   transform-origin: 50% 100%;
   animation: dshSitterBreath 3.8s ease-in-out infinite;
-  image-rendering: auto;
+  image-rendering: pixelated;
 }
 .dsh-sitter-img[data-sleep='1'] {
   animation: dshSitterBreathSleep 5.2s ease-in-out infinite;
@@ -1023,7 +1023,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center bottom;
-  image-rendering: auto;
+  image-rendering: pixelated;
   animation-name: dshRun;
   animation-timing-function: linear;
   animation-direction: alternate;
@@ -1066,7 +1066,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-position: center bottom;
   background-repeat: no-repeat;
-  image-rendering: auto;
+  image-rendering: pixelated;
   transition: transform 600ms cubic-bezier(0.22, 1, 0.36, 1);
   transform-origin: 50% 50%;
 }
@@ -1155,7 +1155,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  image-rendering: auto;
+  image-rendering: pixelated;
 }
 .dsh-sitter-label { opacity: 0.72; }
 .dsh-sitter-value { margin-left: auto; font-weight: 700; letter-spacing: 0.2px; }
@@ -1169,7 +1169,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  image-rendering: auto;
+  image-rendering: pixelated;
   opacity: 0;
   display: none;
   z-index: 4;
@@ -1192,7 +1192,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center;
-  image-rendering: auto;
+  image-rendering: pixelated;
   opacity: 0;
   display: none;
 }
@@ -1210,7 +1210,7 @@ function todaySpecial(now) {
   background-size: contain;
   background-repeat: no-repeat;
   background-position: center bottom;
-  image-rendering: auto;
+  image-rendering: pixelated;
   z-index: 0;
   display: none;
 }
@@ -1361,7 +1361,7 @@ function todaySpecial(now) {
 .dsh-sitter-pcard { box-sizing: border-box; min-height: 152px; border: 1px solid #e3e3ea; border-radius: 12px; padding: 10px; background: #fff; cursor: pointer; text-align: center; transition: box-shadow .15s, border-color .15s; }
 .dsh-sitter-pcard:hover { border-color: #c9a227; box-shadow: 0 4px 14px rgba(0,0,0,.07); }
 .dsh-sitter-pcard.on { border-color: #c9a227; box-shadow: 0 0 0 2px rgba(201,162,39,.25) inset; }
-.dsh-sitter-pcard-art { height: 96px; background-repeat: no-repeat; background-position: center bottom; background-size: contain; image-rendering: auto; margin-bottom: 6px; }
+.dsh-sitter-pcard-art { height: 96px; background-repeat: no-repeat; background-position: center bottom; background-size: contain; image-rendering: pixelated; margin-bottom: 6px; }
 .dsh-sitter-pcard-art.locked { filter: grayscale(1) brightness(.55) opacity(.5); }
 .dsh-sitter-pcard-name { font-size: 13px; font-weight: 600; }
 .dsh-sitter-pcard-hint { font-size: 11px; color: #8a8a96; margin-top: 2px; min-height: 14px; }
