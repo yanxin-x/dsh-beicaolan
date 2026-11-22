@@ -1593,7 +1593,7 @@ window.__ModuleLoader__.load({
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-204201' }),
+            body: JSON.stringify({ v: '20261122-204304' }),
           }).catch(() => {});
         };
         beacon();
@@ -2066,7 +2066,7 @@ window.__ModuleLoader__.load({
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-204201', results }),
+          body: JSON.stringify({ v: '20261122-204304', results }),
         }).catch(() => {});
       };
 
@@ -2171,7 +2171,7 @@ window.__ModuleLoader__.load({
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-204201',
+              build: '20261122-204304',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,

@@ -1,111 +1,79 @@
-# 发布记录（2026-11-22）
+# 发布记录
 
-## 一、已发布
+## v1.0.0（定稿）
 
 | 项 | 值 |
 |---|---|
 | 仓库 | https://github.com/yanxin-x/dsh-beicaolan （**public**） |
-| 首个提交 | `1f2cafa6ce004df36e9f1ce876bc524e51d05529` |
-| tag | `v1.0.0` |
-| 入库 | 183 个文件 / 30 MB |
-| 插件包 | `dsh-sitter/`（子目录） |
-| 打包实测 | `files` 过滤后 **9 个文件 / 5.6 MB**（`npm pack --dry-run`） |
+| tag | **`v1.0.0`** |
+| 插件包 | 仓库子目录 `dsh-sitter/` |
+| 形态 | 17 个（四季 4 + 睡衣 1 + 付费皮肤 12） |
+| 贴图 | 157 张，其中打字第二帧 **34/34 全是真素材** |
+| 规范校验 | **0 条警告** |
+| 离线回归 | `check_client.mjs` 全通过 / `test_cmd_channel.mjs` 20-20 |
 
-### 安装目标
+### 一句话安装（发给对方的 DSH 即可）
 
-```
-git+https://github.com/yanxin-x/dsh-beicaolan.git#1f2cafa6ce004df36e9f1ce876bc524e51d05529&path:/dsh-sitter
-```
-
-`path:/dsh-sitter` 不能省：仓库根是开发工程，插件包在子目录。
-更新插件时 `install_bundle` 会报 `already-installed`，必须 `remove_bundle` → `install_bundle`。
-
-## 二、仓库里有什么
-
-```
-dsh-beicaolan/
-├─ dsh-sitter/          ← 插件包（用户从 git 装的就是它）
-│   ├─ package.json     dsh.bundle.patch + dsh.client + exports + files + icon
-│   ├─ cordis.patch.yml
-│   ├─ index.js  client.js        （构建产物，必须入库）
-│   ├─ locale/zh.json  en.json    meta.title / description / detail
-│   ├─ docs/DETAIL.md
-│   └─ icon.png                   41 KB（上限 256 KiB）
-├─ assets/              152 个构建输入（150 张精灵 + fitting_meta + 图标）
-├─ scripts/pet/         源码真源：client/host 模板 + config.default.json
-├─ scripts/             构建器 + 3 个校验脚本 + CLI
-├─ 80_docs/             架构 / 红线 / 工作流
-├─ README.md  LICENSE(MIT)  .gitignore
+```text
+帮我装个桌宠插件：plugin_manager 的 install_bundle，
+target 用这个：
+git+https://github.com/yanxin-x/dsh-beicaolan.git#v1.0.0&path:/dsh-sitter
+装完把插件启用，然后对主窗口按 Ctrl+R。
 ```
 
-**没进仓库**（留在本地当底稿，`.gitignore` 里写清了）：
-`10_base/` `20_face/` `30_clothes/` `40_actions/` `50_anim/` `00_ref/` `rig/`
-`60_build/` `70_dist/`、`scripts/_*.py`（一次性补丁）、`scripts/*.ps1`、`scripts/pet/experiments/`。
+`path:/dsh-sitter` 不能省——仓库根是开发工程，插件包在子目录。
 
-## 三、环境坑（下次直接照抄）
+### 更新已有安装
 
-### 1. git 必须 `http.sslBackend=openssl`
+`install_bundle` 遇到同名会报 `already-installed`，必须先卸再装：
 
-Windows git 默认 schannel，过代理必然 `SSL/TLS connection failed`。
-本仓库 `.git/config` 已设（机器相关，不入库）：
-
-```
-git config http.sslBackend openssl
-git config http.proxy http://127.0.0.1:7897
+```text
+plugin_manager set_plugin  target=include:dsh-sitter  enabled=false
+plugin_manager remove_bundle target=<旧包名>
+plugin_manager install_bundle target=git+https://github.com/yanxin-x/dsh-beicaolan.git#v1.0.0&path:/dsh-sitter
+plugin_manager set_plugin  target=include:dsh-sitter  enabled=true
+然后 Ctrl+R
 ```
 
-全局只差 sslBackend 这一项；要不要推全局等你定。
+> ⚠️ **插件开关本身不会重载页面侧模块**，不按 Ctrl+R 会一直看到旧版本。
+> 这是本项目最容易踩的坑，排查过至少 3 次。
 
-### 2. 首次 push 会遇到 TLS 抖动，重试即可
+### 装完之后看到什么
 
-第一次 push 报：
+- 一只像素小人坐在输入框右上方（**不压住发送键**）
+- 你打字时它跟着敲键盘（两帧交替），偶尔眨眼
+- 思考时头顶冒云、说话时左边出气泡，两者不重叠
+- 放置一会儿会盖上小被子睡觉
+- 换皮肤时有个礼物盒盖上再打开
+- 设置 →「贝草兰」：调大小、开关奶嘴、衣橱/商店（吉吉币：每学习 10 分钟 1 枚）
 
-```
-TLS connect error: error:0A000126:SSL routines::unexpected eof while reading
-```
+### 已知遗留（计划 v1.0.1）
 
-加上这几个参数后一次通过（30 MB）：
+| 项 | 说明 |
+|---|---|
+| 鲸人 / 蛇人的 **pac 版 idle 是旧设计**（卫衣 vs 军装，剪影 IoU 0.599 / 0.766） | 其余所有帧都是军装版，需要重画这两张 |
+| 熊 pac 打字第二帧、冬装 nopac 眨眼 | 重绘幅度偏大（IoU 0.779 / 0.792） |
+| 10 对帧有 3~15px 的**竖直**偏差 | 属 AI 重绘固有误差；修了会让屁股离砖或头顶留空，反而更扎眼 |
 
-```
-git -c http.postBuffer=524288000 -c http.lowSpeedLimit=0 -c http.lowSpeedTime=999999 push
-```
+详见 `80_docs/AUDIT-20261122.md`。
 
-**认证不要写进 remote URL**。用一次性头：
+---
 
-```powershell
-$tok = (Select-String -Path "$env:USERPROFILE\.dsh\cordis.patch.yml" -Pattern "GITHUB_PERSONAL_ACCESS_TOKEN:\s*'([^']+)'").Matches.Groups[1].Value
-$b64 = [Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes("x-access-token:$tok"))
-git -c http.extraheader="Authorization: Basic $b64" push
-```
-
-### 3. `npm` 在 PowerShell 里被 ExecutionPolicy 拦
-
-用 `npm.cmd`，别用 `npm`。
-
-### 4. 写文件别让 PowerShell 加 BOM
-
-`Set-Content -Encoding UTF8` 在 PS 5.1 会加 BOM，`node --check pet-cli.mjs` 会报
-`Invalid or unexpected token`（BOM 在 `#!` 前面）。用：
-
-```powershell
-[System.IO.File]::WriteAllText((Resolve-Path $f), $t, (New-Object System.Text.UTF8Encoding($false)))
-```
-
-## 四、还没做
-
-| 项 | 状态 | 说明 |
-|---|---|---|
-| 从 git 真机安装一次 | ⚠️ 未实测 | 会动到正在用的 `@local/dsh-sitter`，留着等隔离 profile 里验 |
-| `index.json`（Discover 索引） | ❌ | 想让别人在插件市场里发现才需要；托管到 Pages 或 raw |
-| npm publish | ❌ | `npm whoami` = ENEEDAUTH；走 git 安装不需要 |
-| gh CLI | ❌ | 只影响侧栏 PR 跟踪 |
-
-### 从 git 安装怎么验（安全做法）
-
-不要直接 `remove_bundle` 线上那套。起一个独立 DSH 实例 + 独立 profile，在里面：
+## 仓库里有什么
 
 ```
-plugin_manager install_bundle target="git+https://github.com/yanxin-x/dsh-beicaolan.git#1f2cafa6...&path:/dsh-sitter"
+scripts/            开发工程（模板 + 构建器 + 测试 + 维护脚本）
+assets/             素材原图（157 张 + 道具）
+dsh-sitter/         ★ 插件产物（装这个）
+80_docs/            设计/布局/皮肤/安装/体检等文档
+CHANGELOG.md        全程变更记录
 ```
 
-再确认 bundle 详情页的标题/描述/详情/图标都正常，插件行有图标，宠物能出现在输入框上。
+`dsh-sitter/` 是自包含的：`client.js` 已把图片全部内联成 base64（约 7.2 MB），
+**只拷 `package.json` / `index.js` / `client.js` 三个文件就能跑**，不依赖仓库其它目录。
+
+## 运行时
+
+- 零网络、零模型调用、零外部依赖（素材与台词全在本地）
+- 状态目录 `~/.dsh/dsh-sitter/`：`config.json` / `coins.json` / `port.txt` / 各类日志
+- 删掉状态目录不影响使用，配置回默认
