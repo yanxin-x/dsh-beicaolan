@@ -681,11 +681,17 @@ function todaySpecial(now) {
     }
 
     /** typingB 取构建期派生的 <key>.b；没有就退回第一帧，绝不会变成空白 */
+    // 上一张成功解析的贴图。任何解析失败都沿用它，禁止闪到别的皮肤。
+    let LAST_SRC = '';
+
     function formSprite(form, pose) {
       const basePose = pose === 'typingB' ? 'typing' : pose;
       let key = formSpriteKey(form, basePose);
       if (pose === 'typingB' && SPRITES[key + '.b']) key += '.b';
-      return SPRITES[key] || SPRITES['s0.idle.pac'];
+      const src = SPRITES[key];
+      if (src) { LAST_SRC = src; return src; }
+      // 解析失败：优先沿用上一张（同一个人），实在没有才退回 s0
+      return LAST_SRC || SPRITES['s0.idle.pac'];
     }
 
     /**
@@ -1563,7 +1569,7 @@ function todaySpecial(now) {
       const [giftFrame, setGiftFrame] = React.useState(-1);   // -1 = 不显示
       const giftRef = React.useRef({ form: null, timer: 0 });
       // 屏幕上实际显示的形态：只有"门关上"时才更新，避免看到换装瞬间
-      const [displayForm, setDisplayForm] = React.useState(() => currentForm());
+      const [displayForm, setDisplayForm] = React.useState(() => currentForm() || 's0');
       // 上一帧的状态：用来判断"是不是刚从睡觉醒过来"
       const priorStateRef = React.useRef('sleep');
       const [shift, setShift] = React.useState({ x: 0, y: 0 });
@@ -1840,7 +1846,7 @@ function todaySpecial(now) {
         clearTimeout(giftRef.current.timer);
         giftRef.current.form = target;
         if (firstTime || wokeUp) {
-          setDisplayForm(target);
+          setDisplayForm(target || 's0');
           setGiftFrame(-1);
           return;
         }
@@ -1849,7 +1855,7 @@ function todaySpecial(now) {
         let f = 0;
         const wrapUp = () => {
           if (f < frames) { setGiftFrame(f); f += 1; giftRef.current.timer = window.setTimeout(wrapUp, ms); return; }
-          setDisplayForm(target);                       // 最后一帧完全遮住时换装
+          setDisplayForm(target || 's0');               // 最后一帧完全遮住时换装
           setGiftFrame(frames - 1);
           giftRef.current.timer = window.setTimeout(unwrap, ms * 3);
         };
@@ -1868,7 +1874,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-221232' }),
+            body: JSON.stringify({ v: '20261122-221546' }),
           }).catch(() => {});
         };
         beacon();
@@ -2408,7 +2414,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-221232', results }),
+          body: JSON.stringify({ v: '20261122-221546', results }),
         }).catch(() => {});
       };
 
@@ -2513,7 +2519,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-221232',
+              build: '20261122-221546',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
