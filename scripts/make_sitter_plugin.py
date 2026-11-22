@@ -195,7 +195,7 @@ BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
 # 开发者版：本地检出直接用 SITTER_DEV=1 构建，版本号带 -dev 后缀、界面带角标。
 # 发布版（推 tag 的那份）不带后缀，用户装到的就是干净版本。
 BUILD_IS_DEV = os.environ.get('SITTER_DEV') == '1'
-PLUGIN_VERSION = '1.0.5' if not BUILD_IS_DEV else '1.0.5-dev'
+PLUGIN_VERSION = '1.0.6' if not BUILD_IS_DEV else '1.0.6-dev'
 
 
 DETAIL_DOC = """# 贝草兰 · 桌上陪伴

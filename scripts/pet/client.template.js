@@ -909,8 +909,8 @@ function todaySpecial(now) {
 .dsh-sitter-fire {
   position: absolute;
   left: 50%;
-  bottom: -4%;
-  width: 78%;
+  top: -3%;
+  width: 76%;
   height: 30%;
   transform: translateX(-50%);
   pointer-events: none;
@@ -924,23 +924,23 @@ function todaySpecial(now) {
   mix-blend-mode: screen;
 }
 .dsh-sitter-fire i:nth-child(1) {
-  left: 2%; width: 34%; height: 62%;
+  left: -4%; width: 36%; height: 64%;
   background: radial-gradient(circle at 50% 78%, #fff2b0 0%, #ffb03a 42%, #ff5a1f 74%, rgba(200,40,0,0) 100%);
   animation: dshFireA 620ms ease-in-out infinite;
 }
 .dsh-sitter-fire i:nth-child(2) {
-  left: 33%; width: 40%; height: 100%;
+  left: 32%; width: 36%; height: 86%;
   background: radial-gradient(circle at 50% 80%, #fffbe0 0%, #ffc94d 38%, #ff6a24 72%, rgba(190,30,0,0) 100%);
   animation: dshFireB 520ms ease-in-out infinite;
 }
 .dsh-sitter-fire i:nth-child(3) {
-  right: 2%; width: 34%; height: 66%;
+  right: -4%; width: 36%; height: 68%;
   background: radial-gradient(circle at 50% 78%, #fff2b0 0%, #ffa82e 44%, #ff4a12 76%, rgba(200,40,0,0) 100%);
   animation: dshFireC 700ms ease-in-out infinite;
 }
-@keyframes dshFireA { 0%,100% { transform: scaleY(0.82) rotate(-3deg); opacity: .9; } 50% { transform: scaleY(1.06) rotate(2deg); opacity: 1; } }
+@keyframes dshFireA { 0%,100% { transform: scaleY(0.82) rotate(-14deg); opacity: .9; } 50% { transform: scaleY(1.06) rotate(-8deg); opacity: 1; } }
 @keyframes dshFireB { 0%,100% { transform: scaleY(1.0) rotate(2deg); opacity: .95; } 50% { transform: scaleY(1.18) rotate(-2deg); opacity: 1; } }
-@keyframes dshFireC { 0%,100% { transform: scaleY(0.88) rotate(3deg); opacity: .88; } 50% { transform: scaleY(1.0) rotate(-3deg); opacity: 1; } }
+@keyframes dshFireC { 0%,100% { transform: scaleY(0.88) rotate(14deg); opacity: .88; } 50% { transform: scaleY(1.0) rotate(8deg); opacity: 1; } }
 
 .dsh-sitter-gift {
   /* 略微向外溢出：思考云/耳朵在挂件区边缘，遮不满会露头 */
