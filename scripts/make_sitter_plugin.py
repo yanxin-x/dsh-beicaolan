@@ -236,7 +236,7 @@ PACKAGE = {
         './locale/*.json': './locale/*.json',
         './icon': './icon.png',
     },
-    'files': ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'locale/*.json', 'docs', 'icon.png'],
+    'files': ['index.js', 'client.js', 'cordis.patch.yml', 'README.md', 'locale/*.json', 'docs', 'icon.png', 'vendor'],
     'icon': './icon.png',
     'keywords': ['dsh', 'dsh-plugin', 'desktop-pet', 'pixel-art', 'companion'],
     'license': 'MIT',

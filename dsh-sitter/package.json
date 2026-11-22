@@ -18,7 +18,8 @@
     "README.md",
     "locale/*.json",
     "docs",
-    "icon.png"
+    "icon.png",
+    "vendor"
   ],
   "icon": "./icon.png",
   "keywords": [
