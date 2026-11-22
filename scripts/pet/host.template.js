@@ -339,20 +339,8 @@ function settleCoins(todayMinutes) {
 }
 
 /** 皮肤目录：价格来自"每天 3 小时 ≈ 18 币"的节奏 */
-const SKIN_CATALOG = [
-  { id: 'caveman', name: '原始人', price: 20, desc: '兽皮背心 + 骨头发簪', emoji: '🦴' },
-  { id: 'muscle', name: '肌肉男', price: 45, desc: '上半身赤裸的腱子肉', emoji: '💪' },
-  { id: 'wolf', name: '兽人·狼', price: 70, desc: '灰毛耳朵 + 尾巴', emoji: '🐺' },
-  { id: 'fox', name: '兽人·狐', price: 70, desc: '橙毛尖耳 + 大尾巴', emoji: '🦊' },
-  { id: 'bear', name: '兽人·熊', price: 80, desc: '圆耳朵 + 小短尾', emoji: '🐻' },
-  { id: 'cat', name: '兽人·猫', price: 70, desc: '软软的猫耳', emoji: '🐱' },
-  { id: 'genderbend', name: '性转', price: 110, desc: '另一个自己', emoji: '🪞' },
-  { id: 'snake', name: '蛇人', price: 90, desc: '蛇耳 + 竖瞳 + 翠绿长尾', emoji: '🐍' },
-  { id: 'dragon', name: '龙人', price: 150, desc: '龙角 + 小龙翼 + 青龙尾', emoji: '🐲' },
-  { id: 'whale', name: '鲸人', price: 200, desc: '鲸鳍耳 + 喷水孔 + 鲸尾', emoji: '🐋' },
-  { id: 'qipao', name: '旗袍', price: 130, desc: '酒红改良旗袍 + 金发簪', emoji: '👘' },
-  { id: 'ultra', name: '光之巨人', price: 160, desc: '银红战衣 + 胸口计时器', emoji: '✨' },
-];
+// 商店目录：由构建期从 scripts/pet/skins.json 注入（唯一真源，不再手写）
+const SKIN_CATALOG = __SKIN_CATALOG__;
 
 function buySkin(id) {
   const item = SKIN_CATALOG.find((s) => s.id === id);

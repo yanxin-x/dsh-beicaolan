@@ -11,6 +11,9 @@ window.__ModuleLoader__.load({
     const h = React.createElement;
     const SPRITES = __SPRITES__;
     const DEFAULTS = __CONFIG_DEFAULTS__;
+    // 形态注册表（构建期从 scripts/pet/skins.json 注入）：除"睡觉"外的一切外观都是形态
+    const FORMS = __SKINS__;
+    const FORM_IDS = FORMS.map((f) => f.id);
 
     // 运行时可改的参数：初始值来自构建时的默认配置，之后由宿主 /config 覆盖
     const RT = {
@@ -261,76 +264,76 @@ window.__ModuleLoader__.load({
     })();
     let OUTFIT_INDEX = OUTFIT_RAW;
 
-    /** 当前该穿什么：手动（含皮肤） > 夜间睡衣 > 季节 */
+    /**
+     * 当前形态 id：手动 > 夜间睡衣 > 季节。
+     * 返回值就是注册表里的 form.id（不再有 'skin:' 前缀这类临时约定）。
+     * outfits.force 兼容三种历史写法：形态 id（"caveman"）、数字（0–3 → s0..s3）、"pajama"。
+     */
     function currentForm() {
       const force = RT.outfitForce;
-      if (force === 'pajama') return 'pajama';
-      if (typeof force === 'string' && SKIN_IDS.includes(force)) return 'skin:' + force;
       if (force !== null && force !== undefined && force !== '') {
+        const byId = FORMS.find((f) => f.id === String(force));
+        if (byId) return byId.id;
         const n = Number(force);
-        if (Number.isFinite(n)) return 's' + Math.max(0, Math.min(3, Math.round(n)));
+        if (Number.isFinite(n)) {
+          const season = FORMS.find((f) => f.id === 's' + Math.max(0, Math.min(3, Math.round(n))));
+          if (season) return season.id;
+        }
       }
-      const h = new Date().getHours();
+      const hh = new Date().getHours();
       const night = RT.nightFrom > RT.nightTo
-        ? (h >= RT.nightFrom || h < RT.nightTo)
-        : (h >= RT.nightFrom && h < RT.nightTo);
-      if (night) return 'pajama';
-      if (RT.seasonMode === 'rotate') return 's' + OUTFIT_RAW;
+        ? (hh >= RT.nightFrom || hh < RT.nightTo)
+        : (hh >= RT.nightFrom && hh < RT.nightTo);
+      if (night) {
+        const pj = FORMS.find((f) => f.kind === 'night');
+        if (pj) return pj.id;
+      }
+      if (RT.seasonMode === 'rotate') {
+        const byRot = FORMS.find((f) => f.rotateIndex === OUTFIT_RAW);
+        if (byRot) return byRot.id;
+      }
       const m = new Date().getMonth() + 1;
-      if (m >= 3 && m <= 5) return 's2';
-      if (m >= 6 && m <= 8) return 's3';
-      if (m >= 9 && m <= 11) return 's1';
-      return 's0';
+      const season = FORMS.find((f) => f.kind === 'season' && (f.months || []).includes(m));
+      if (season) return season.id;
+      const anySeason = FORMS.find((f) => f.kind === 'season');
+      return anySeason ? anySeason.id : FORM_IDS[0];
     }
 
     /**
-     * 形态 + 姿势 → 精灵 key。只做决策、不碰 URL：
-     * 这样"打字第二帧"可以统一在最后追加，不用改每一条回退链。
-     * 回退顺序：优先不戴奶嘴版 → 再退回带奶嘴版（绝不让奶嘴凭空出现）。
-     * 姿势：idle | blink | typing（第一帧）| typingB（第二帧，key 后缀 _f2，构建期派生）
+     * 形态 + 姿势 → 精灵 key。统一格式 <form>.<pose>.<pac>，不再拼名字。
+     * 回退顺序写死在这里（注册表只描述"有什么"，不描述"缺了怎么办"）：
+     *   ① 目标姿势 + 目标奶嘴状态
+     *   ② 目标姿势 + 另一种奶嘴状态
+     *   ③ 待机 + 目标奶嘴状态
+     *   ④ 待机 + 另一种奶嘴状态
+     *   ⑤ 全局兜底（第一个季节的待机）
+     * 姿势：idle | blink | typing（第一帧）| typingB（第二帧，后缀 .b，构建期派生）
      */
-    const SKIN_IDS = ['caveman', 'muscle', 'wolf', 'fox', 'cat', 'bear', 'genderbend', 'ultra', 'snake', 'dragon', 'whale', 'qipao'];
+    const SKIN_IDS = FORMS.filter((f) => f.kind === 'skin').map((f) => f.id);
 
     function formSpriteKey(form, pose) {
-      const noPac = RT.pacifier === false;
-      const isTyping = pose === 'typing' || pose === 'typingB';
-      const isSkin = typeof form === 'string' && form.indexOf('skin:') === 0;
-      const baseId = isSkin ? form.slice(5) : form;
-      const chain = [];
-
-      // 睡衣：不戴奶嘴版只有一张静态图，带姿势的只有带奶嘴版（沿用原来的兜底）
-      if (form === 'pajama') {
-        const k = isTyping ? 'pajama2' : pose === 'blink' ? 'pajama1' : 'pajama0';
-        for (const c of (noPac ? ['nopac_' + k, k, 'nopac_pajama'] : [k])) {
-          if (SPRITES[c]) return c;
-        }
-        return noPac ? 'nopac_pajama' : 'pajama0';
-      }
-
-      if (noPac) {
-        if (isTyping) chain.push('nopac_typing_' + baseId, 'typing_' + baseId);
-        if (pose === 'blink') chain.push('nopac_blink_' + baseId, 'blink_' + baseId);
-        chain.push(isSkin ? 'nopac_' + baseId : 'nopac_s' + String(form).slice(1));
-      }
-      if (isSkin) {
-        if (isTyping) chain.push('typing_' + baseId);
-        if (pose === 'blink') chain.push('blink_' + baseId);
-        chain.push('skin_' + baseId);
-      } else {
-        const idx = String(form).slice(1);
-        chain.push((isTyping ? 'typing' : pose === 'blink' ? 'blink' : 'idle') + idx);
-      }
-      for (const k of chain) {
+      const pac = RT.pacifier === false ? 'nopac' : 'pac';
+      const other = pac === 'pac' ? 'nopac' : 'pac';
+      const tries = [
+        form + '.' + pose + '.' + pac,
+        form + '.' + pose + '.' + other,
+        form + '.idle.' + pac,
+        form + '.idle.' + other,
+        's0.idle.pac',
+        's0.idle.nopac',
+      ];
+      for (const k of tries) {
         if (SPRITES[k]) return k;
       }
-      return 'idle0';
+      return Object.keys(SPRITES)[0];
     }
 
-    /** typingB 取构建期派生的 <key>_f2；没有就退回第一帧，绝不会变成空白 */
+    /** typingB 取构建期派生的 <key>.b；没有就退回第一帧，绝不会变成空白 */
     function formSprite(form, pose) {
-      let key = formSpriteKey(form, pose);
-      if (pose === 'typingB' && SPRITES[key + '_f2']) key += '_f2';
-      return SPRITES[key] || SPRITES.idle0;
+      const basePose = pose === 'typingB' ? 'typing' : pose;
+      let key = formSpriteKey(form, basePose);
+      if (pose === 'typingB' && SPRITES[key + '.b']) key += '.b';
+      return SPRITES[key] || SPRITES['s0.idle.pac'];
     }
 
     /**
@@ -983,13 +986,15 @@ window.__ModuleLoader__.load({
       const balance = coins?.balance ?? 0;
       const equipped = skins?.equipped ?? null;
 
-      const seasonals = [
-        { id: '0', name: '冬装', hint: '12–2 月自动' },
-        { id: '1', name: '秋装', hint: '9–11 月自动' },
-        { id: '2', name: '春装', hint: '3–5 月自动' },
-        { id: '3', name: '夏装', hint: '6–8 月自动' },
-        { id: 'pajama', name: '睡衣', hint: '23:00–07:00 自动' },
-      ];
+      // 衣橱上半区：季节 + 夜间，全部来自注册表（不再手写一张表）
+      const seasonals = FORMS.filter((f) => f.kind !== 'skin').map((f) => ({
+        id: f.id,
+        name: f.label,
+        hint: f.kind === 'night'
+          ? '23:00–07:00 自动'
+          : ((f.months || []).join(' / ') + ' 月自动'),
+        art: SPRITES[f.id + '.idle.pac'] || SPRITES['s0.idle.pac'],
+      }));
 
       return h('div', { className: 'dsh-sitter-panel' },
         h('style', null, PANEL_CSS),
@@ -1048,7 +1053,7 @@ window.__ModuleLoader__.load({
               onClick: () => equip(s.id),
             },
               h('div', { className: 'dsh-sitter-pcard-art', style: {
-                backgroundImage: 'url("' + (s.id === 'pajama' ? SPRITES.pajama0 : SPRITES['idle' + s.id]) + '")',
+                backgroundImage: 'url("' + s.art + '")',
               } }),
               h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
               h('div', { className: 'dsh-sitter-pcard-hint' }, s.hint),
@@ -1058,7 +1063,7 @@ window.__ModuleLoader__.load({
               className: 'dsh-sitter-pcard' + (equipped === s.id ? ' on' : ''),
               onClick: () => equip(s.id),
             },
-              h('div', { className: 'dsh-sitter-pcard-art', style: { backgroundImage: 'url("' + (SPRITES['skin_' + s.id] || SPRITES.idle0) + '")' } }),
+              h('div', { className: 'dsh-sitter-pcard-art', style: { backgroundImage: 'url("' + (SPRITES[s.id + '.idle.pac'] || SPRITES['s0.idle.pac']) + '")' } }),
               h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
               h('div', { className: 'dsh-sitter-pcard-hint' }, '已解锁'),
             )),
@@ -1066,7 +1071,7 @@ window.__ModuleLoader__.load({
           : h('div', { className: 'dsh-sitter-grid' },
             catalog.map((s) => h('div', { key: s.id, className: 'dsh-sitter-pcard' + (s.owned ? ' owned' : '') },
               h('div', { className: 'dsh-sitter-pcard-art' + (s.owned ? '' : ' locked'), style: {
-                backgroundImage: 'url("' + (SPRITES['skin_' + s.id] || SPRITES.idle0) + '")',
+                backgroundImage: 'url("' + (SPRITES[s.id + '.idle.pac'] || SPRITES['s0.idle.pac']) + '")',
               } }),
               h('div', { className: 'dsh-sitter-pcard-name' }, s.name),
               h('div', { className: 'dsh-sitter-pcard-hint' }, s.desc || ''),
@@ -1479,15 +1484,6 @@ window.__ModuleLoader__.load({
         setTimeout(() => setSay(''), 1800);
       };
 
-      const cycleOutfit = () => {
-        const cur = Number(RT.outfitForce);
-        const next = (Number.isFinite(cur) ? cur + 1 : 0) % 4;
-        patchConfig({ outfits: { force: next } });
-        setSwapKey((k) => k + 1);
-        setTimeout(() => setSwapKey(0), 460);
-        setSay(['换好啦', '这套好看吗', '试试这件', '再换一套'][next % 4]);
-        setTimeout(() => setSay(''), 2200);
-      };
 
       /** 唯一的贴图决策：先看是否变身/拖动，再按状态取图 */
       const spriteFor = (draggingNow, form, pose) => {
@@ -1954,8 +1950,8 @@ window.__ModuleLoader__.load({
           const keys = Object.keys(SPRITES).sort();
           const skins = SKIN_IDS.map((id) => ({
             id,
-            key: 'skin_' + id,
-            hasSprite: typeof SPRITES['skin_' + id] === 'string' && SPRITES['skin_' + id].indexOf('data:image') === 0,
+            key: id + '.idle.pac',
+            hasSprite: typeof SPRITES[id + '.idle.pac'] === 'string' && SPRITES[id + '.idle.pac'].indexOf('data:image') === 0,
           }));
           const form = currentForm();
           const probe = formSprite(form, 'idle');

@@ -53,159 +53,48 @@ COLS = META['cols']
 
 # 素材清单：key -> (相对路径, 嵌入高度)
 
-SPRITES = {
+# ── 非形态素材：道具、特殊姿势。不属于任何皮肤，仍单独声明 ──
+# 形态（皮肤）贴图不在这里 —— 全部由 scripts/pet/skins.json 驱动，见下方 SKINS/FORMS。
+PROPS = {
     'sleep': (BASE / 'sleep_dino.png', EMBED_H),
     'strip': (BASE / 'fitting_strip.png', EMBED_H),
     'brick': (BASE / 'gold_brick.png', SMALL),
-    'idle0': (BASE / 'sitting.png', EMBED_H),
-    'idle1': (BASE / 'sitting_hoodie_clean.png', EMBED_H),
-    'idle2': (BASE / 'sitting_spring.png', EMBED_H),
-    'idle3': (BASE / 'sitting_summer.png', EMBED_H),
-    'blink0': (BASE / 'blink0.png', EMBED_H),
-    'blink1': (BASE / 'blink1.png', EMBED_H),
-    'blink2': (BASE / 'blink2.png', EMBED_H),
-    'blink3': (BASE / 'blink3.png', EMBED_H),
-    'typing0': (BASE / 'typing0.png', EMBED_H),
-    'typing1': (BASE / 'typing1.png', EMBED_H),
-    'typing2': (BASE / 'typing2.png', EMBED_H),
-    'typing3': (BASE / 'typing3.png', EMBED_H),
-    'typingblink0': (BASE / 'typingblink0.png', EMBED_H),
-    'typingblink1': (BASE / 'typingblink1.png', EMBED_H),
-    'typingblink2': (BASE / 'typingblink2.png', EMBED_H),
-    'typingblink3': (BASE / 'typingblink3.png', EMBED_H),
+    'think': (BASE / 'think_cloud.png', 52),
+    'bubble': (GEN / 'bubble.png', SMALL),
     'iconCoin': (BASE / 'icon_coin.png', SMALL),
     'iconClock': (BASE / 'icon_clock.png', SMALL),
-    'bubble': (GEN / 'bubble.png', SMALL),
-    'think': (BASE / 'think_cloud.png', 52),
-    'skin_caveman': (BASE / 'skin_caveman.png', EMBED_H),
-    'skin_ultra': (BASE / 'skin_ultra.png', EMBED_H),
-    'nopac_blink_s0': (BASE / 'nopac_blink_s0.png', EMBED_H),
-    'nopac_typing_s0': (BASE / 'nopac_typing_s0.png', EMBED_H),
-    'nopac_typingblink_s0': (BASE / 'nopac_typingblink_s0.png', EMBED_H),
-    'nopac_blink_s1': (BASE / 'nopac_blink_s1.png', EMBED_H),
-    'nopac_typing_s1': (BASE / 'nopac_typing_s1.png', EMBED_H),
-    'nopac_typingblink_s1': (BASE / 'nopac_typingblink_s1.png', EMBED_H),
-    'nopac_blink_s2': (BASE / 'nopac_blink_s2.png', EMBED_H),
-    'nopac_typing_s2': (BASE / 'nopac_typing_s2.png', EMBED_H),
-    'nopac_typingblink_s2': (BASE / 'nopac_typingblink_s2.png', EMBED_H),
-    'nopac_blink_s3': (BASE / 'nopac_blink_s3.png', EMBED_H),
-    'nopac_typing_s3': (BASE / 'nopac_typing_s3.png', EMBED_H),
-    'nopac_typingblink_s3': (BASE / 'nopac_typingblink_s3.png', EMBED_H),
-    'nopac_caveman': (BASE / 'nopac_caveman.png', EMBED_H),
-    'nopac_muscle': (BASE / 'nopac_muscle.png', EMBED_H),
-    'nopac_wolf': (BASE / 'nopac_wolf.png', EMBED_H),
-    'nopac_fox': (BASE / 'nopac_fox.png', EMBED_H),
-    'nopac_cat': (BASE / 'nopac_cat.png', EMBED_H),
-    'nopac_bear': (BASE / 'nopac_bear.png', EMBED_H),
-    'nopac_genderbend': (BASE / 'nopac_genderbend.png', EMBED_H),
-    'nopac_ultra': (BASE / 'nopac_ultra.png', EMBED_H),
-    'nopac_s0': (BASE / 'nopac_s0.png', EMBED_H),
-    'nopac_s1': (BASE / 'nopac_s1.png', EMBED_H),
-    'nopac_s2': (BASE / 'nopac_s2.png', EMBED_H),
-    'nopac_s3': (BASE / 'nopac_s3.png', EMBED_H),
-    'nopac_pajama': (BASE / 'nopac_pajama.png', EMBED_H),
-    'blink_caveman': (BASE / 'blink_caveman.png', EMBED_H),
-    'typing_muscle': (BASE / 'typing_muscle.png', EMBED_H),
-    'blink_wolf': (BASE / 'blink_wolf.png', EMBED_H),
-    'blink_cat': (BASE / 'blink_cat.png', EMBED_H),
-    'blink_bear': (BASE / 'blink_bear.png', EMBED_H),
-    'skin_snake': (BASE / 'skin_snake.png', EMBED_H),
-    'nopac_snake': (BASE / 'nopac_snake.png', EMBED_H),
-    'blink_snake': (BASE / 'blink_snake.png', EMBED_H),
-    'nopac_blink_snake': (BASE / 'nopac_blink_snake.png', EMBED_H),
-    'typing_snake': (BASE / 'typing_snake.png', EMBED_H),
-    'nopac_typing_snake': (BASE / 'nopac_typing_snake.png', EMBED_H),
-    'typingblink_snake': (BASE / 'typingblink_snake.png', EMBED_H),
-    'nopac_typingblink_snake': (BASE / 'nopac_typingblink_snake.png', EMBED_H),
-    'skin_dragon': (BASE / 'skin_dragon.png', EMBED_H),
-    'nopac_dragon': (BASE / 'nopac_dragon.png', EMBED_H),
-    'blink_dragon': (BASE / 'blink_dragon.png', EMBED_H),
-    'nopac_blink_dragon': (BASE / 'nopac_blink_dragon.png', EMBED_H),
-    'typing_dragon': (BASE / 'typing_dragon.png', EMBED_H),
-    'nopac_typing_dragon': (BASE / 'nopac_typing_dragon.png', EMBED_H),
-    'typingblink_dragon': (BASE / 'typingblink_dragon.png', EMBED_H),
-    'nopac_typingblink_dragon': (BASE / 'nopac_typingblink_dragon.png', EMBED_H),
-    'skin_whale': (BASE / 'skin_whale.png', EMBED_H),
-    'nopac_whale': (BASE / 'nopac_whale.png', EMBED_H),
-    'blink_whale': (BASE / 'blink_whale.png', EMBED_H),
-    'nopac_blink_whale': (BASE / 'nopac_blink_whale.png', EMBED_H),
-    'typing_whale': (BASE / 'typing_whale.png', EMBED_H),
-    'nopac_typing_whale': (BASE / 'nopac_typing_whale.png', EMBED_H),
-    'typingblink_whale': (BASE / 'typingblink_whale.png', EMBED_H),
-    'nopac_typingblink_whale': (BASE / 'nopac_typingblink_whale.png', EMBED_H),
-    'skin_jk': (BASE / 'skin_jk.png', EMBED_H),
-    'skin_qipao': (BASE / 'skin_qipao.png', EMBED_H),
-    'nopac_qipao': (BASE / 'nopac_qipao.png', EMBED_H),
-    'blink_qipao': (BASE / 'blink_qipao.png', EMBED_H),
-    'nopac_blink_qipao': (BASE / 'nopac_blink_qipao.png', EMBED_H),
-    'typing_qipao': (BASE / 'typing_qipao.png', EMBED_H),
-    'nopac_typing_qipao': (BASE / 'nopac_typing_qipao.png', EMBED_H),
-    'typingblink_qipao': (BASE / 'typingblink_qipao.png', EMBED_H),
-    'nopac_typingblink_qipao': (BASE / 'nopac_typingblink_qipao.png', EMBED_H),
-    'nopac_blink_caveman': (BASE / 'nopac_blink_caveman.png', EMBED_H),
-    'typing_caveman': (BASE / 'typing_caveman.png', EMBED_H),
-    'nopac_typing_caveman': (BASE / 'nopac_typing_caveman.png', EMBED_H),
-    'typingblink_caveman': (BASE / 'typingblink_caveman.png', EMBED_H),
-    'nopac_typingblink_caveman': (BASE / 'nopac_typingblink_caveman.png', EMBED_H),
-    'blink_muscle': (BASE / 'blink_muscle.png', EMBED_H),
-    'nopac_blink_muscle': (BASE / 'nopac_blink_muscle.png', EMBED_H),
-    'nopac_typing_muscle': (BASE / 'nopac_typing_muscle.png', EMBED_H),
-    'typingblink_muscle': (BASE / 'typingblink_muscle.png', EMBED_H),
-    'nopac_typingblink_muscle': (BASE / 'nopac_typingblink_muscle.png', EMBED_H),
-    'nopac_blink_wolf': (BASE / 'nopac_blink_wolf.png', EMBED_H),
-    'typing_wolf': (BASE / 'typing_wolf.png', EMBED_H),
-    'nopac_typing_wolf': (BASE / 'nopac_typing_wolf.png', EMBED_H),
-    'typingblink_wolf': (BASE / 'typingblink_wolf.png', EMBED_H),
-    'nopac_typingblink_wolf': (BASE / 'nopac_typingblink_wolf.png', EMBED_H),
-    'blink_fox': (BASE / 'blink_fox.png', EMBED_H),
-    'nopac_blink_fox': (BASE / 'nopac_blink_fox.png', EMBED_H),
-    'typing_fox': (BASE / 'typing_fox.png', EMBED_H),
-    'nopac_typing_fox': (BASE / 'nopac_typing_fox.png', EMBED_H),
-    'typingblink_fox': (BASE / 'typingblink_fox.png', EMBED_H),
-    'nopac_typingblink_fox': (BASE / 'nopac_typingblink_fox.png', EMBED_H),
-    'nopac_blink_cat': (BASE / 'nopac_blink_cat.png', EMBED_H),
-    'typing_cat': (BASE / 'typing_cat.png', EMBED_H),
-    'nopac_typing_cat': (BASE / 'nopac_typing_cat.png', EMBED_H),
-    'typingblink_cat': (BASE / 'typingblink_cat.png', EMBED_H),
-    'nopac_typingblink_cat': (BASE / 'nopac_typingblink_cat.png', EMBED_H),
-    'nopac_blink_bear': (BASE / 'nopac_blink_bear.png', EMBED_H),
-    'typing_bear': (BASE / 'typing_bear.png', EMBED_H),
-    'nopac_typing_bear': (BASE / 'nopac_typing_bear.png', EMBED_H),
-    'typingblink_bear': (BASE / 'typingblink_bear.png', EMBED_H),
-    'nopac_typingblink_bear': (BASE / 'nopac_typingblink_bear.png', EMBED_H),
-    'blink_genderbend': (BASE / 'blink_genderbend.png', EMBED_H),
-    'nopac_blink_genderbend': (BASE / 'nopac_blink_genderbend.png', EMBED_H),
-    'typing_genderbend': (BASE / 'typing_genderbend.png', EMBED_H),
-    'nopac_typing_genderbend': (BASE / 'nopac_typing_genderbend.png', EMBED_H),
-    'typingblink_genderbend': (BASE / 'typingblink_genderbend.png', EMBED_H),
-    'nopac_typingblink_genderbend': (BASE / 'nopac_typingblink_genderbend.png', EMBED_H),
-    'blink_ultra': (BASE / 'blink_ultra.png', EMBED_H),
-    'nopac_blink_ultra': (BASE / 'nopac_blink_ultra.png', EMBED_H),
-    'typing_ultra': (BASE / 'typing_ultra.png', EMBED_H),
-    'nopac_typing_ultra': (BASE / 'nopac_typing_ultra.png', EMBED_H),
-    'typingblink_ultra': (BASE / 'typingblink_ultra.png', EMBED_H),
-    'nopac_typingblink_ultra': (BASE / 'nopac_typingblink_ultra.png', EMBED_H),
-    'skin_wolf': (BASE / 'skin_wolf.png', EMBED_H),
-    'skin_fox': (BASE / 'skin_fox.png', EMBED_H),
-    'skin_cat': (BASE / 'skin_cat.png', EMBED_H),
-    'skin_bear': (BASE / 'skin_bear.png', EMBED_H),
-    'skin_muscle': (BASE / 'skin_muscle.png', EMBED_H),
-    'skin_genderbend': (BASE / 'skin_genderbend.png', EMBED_H),
     'ultra0': (BASE / 'ultra0.png', EMBED_H),
     'ultra1': (BASE / 'ultra1.png', EMBED_H),
     'walk0': (BASE / 'walk' / 'f_01.png', EMBED_H),
     'walk1': (BASE / 'walk' / 'f_02.png', EMBED_H),
     'walk2': (BASE / 'walk' / 'f_03.png', EMBED_H),
     'walk3': (BASE / 'walk' / 'f_04.png', EMBED_H),
-    'pajama0': (BASE / 'pajama0.png', EMBED_H),
-    'pajama1': (BASE / 'pajama1.png', EMBED_H),
-    'pajama2': (BASE / 'pajama2.png', EMBED_H),
     'angry0': (BASE / 'angry0.png', 600),
     'angry1': (BASE / 'angry1.png', 600),
     'angry2': (BASE / 'angry2.png', 600),
     'angry3': (BASE / 'angry3.png', 600),
-
 }
+
+# ── 形态注册表：唯一真源 scripts/pet/skins.json ──
+# 除"睡觉"以外的一切外观都是一个「形态」，格式统一：
+#   kind=season  s0..s3   按月份自动
+#   kind=night   pajama   夜间
+#   kind=skin    其余     商店皮肤（带 shop 价格/描述）
+# 贴图 key 统一为 <form>.<pose>.<pac>；打字姿势另派生 <key>.b 作为第二帧。
+SKINS = json.loads((PET / 'skins.json').read_text(encoding='utf-8'))
+FORMS = SKINS['forms']
+POSES = SKINS['poses']
+SKIN_IDS = [f['id'] for f in FORMS if f['kind'] == 'skin']
+SKIN_CATALOG = [
+    {'id': f['id'], 'name': f['label'], 'price': f['shop']['price'],
+     'desc': f['shop']['desc'], 'emoji': f['shop']['emoji']}
+    for f in FORMS if f['kind'] == 'skin'
+]
+FORMS_META = [
+    {'id': f['id'], 'label': f['label'], 'kind': f['kind'],
+     'months': f.get('months') or [], 'rotateIndex': f.get('rotateIndex')}
+    for f in FORMS
+]
 
 import time as _time
 BUILD_VERSION = _time.strftime('%Y%m%d-%H%M%S')
@@ -281,21 +170,6 @@ PET_CANVAS_W = 300
 # 「打字第二帧」的下移量（贴完画布后的像素，画布高 EMBED_H=180）。
 # 显示高度 83px 时约 1.8px —— 2px 在 83px 下只有 0.9px，肉眼几乎看不出来，所以取 4。
 TYPING_FRAME_PX = 4
-
-
-def _is_typing_key(key: str) -> bool:
-    """哪些贴图需要派生第二帧：所有打字姿势，**包括 nopac_ 前缀那一半**。
-
-    历史遗留的 `typingblink_*` 语义混乱（四季是真闭眼、部分皮肤是复制帧、部分是位移帧），
-    所以不再复用它当第二帧，改由构建期统一派生 `<key>_f2`。
-    """
-    if key.endswith('_f2'):
-        return False
-    if 'typingblink' in key:
-        return False
-    if key == 'pajama2':                      # 睡衣的打字姿势
-        return True
-    return key.startswith('typing') or key.startswith('nopac_typing')
 
 
 TOP_MARGIN = 0          # 画布顶部留 2px 透明边（发尖不再贴画布边缘）
@@ -445,7 +319,17 @@ def main() -> int:
         return solid / max(1, im.width * im.height)
 
     bad = []
-    for key, (path, _h) in SPRITES.items():
+
+    def _all_assets():
+        """把道具 + 注册表里所有形态贴图摊平成 (key, path)"""
+        for k, v in PROPS.items():
+            yield k, v[0]
+        for form in FORMS:
+            for pose, variants in (form['sprites'] or {}).items():
+                for pac, rel in variants.items():
+                    yield f"{form['id']}.{pose}.{pac}", BASE / rel
+
+    for key, path in _all_assets():
         try:
             r = ink_ratio(path)
             if r < 0.08:
@@ -457,36 +341,48 @@ def main() -> int:
 
     encoded = {}
     max_ratio = 0.0
-    for key, (path, height) in SPRITES.items():
+
+    # 道具
+    for key, (path, height) in PROPS.items():
         if not path.exists():
             print(f'[skip] {key}: 缺少 {path}')
             continue
         b64, w, h = embed(path, height)
         encoded[key] = f'data:image/png;base64,{b64}'
-        if key in ('strip', 'brick') or key.startswith('icon') or key in ('bubble', 'think') or key.startswith('angry') or key.startswith('pajama') or key.startswith('walk') or key.startswith('ultra') or key.startswith('skin_'):
-            continue
-        max_ratio = max(max_ratio, w / h)
-        print(f'  {key}: {w}x{h} -> {len(b64) // 1024} KB')
+
+    # 形态贴图：统一 key <form>.<pose>.<pac>
+    missing = []
+    frame2 = 0
+    for form in FORMS:
+        for pose in POSES:
+            variants = form['sprites'].get(pose) or {}
+            for pac, rel in variants.items():
+                path = BASE / rel
+                if not path.exists():
+                    missing.append(f"{form['id']}.{pose}.{pac} <- {rel}")
+                    continue
+                key = f"{form['id']}.{pose}.{pac}"
+                b64, w, h = embed(path, EMBED_H)
+                encoded[key] = f'data:image/png;base64,{b64}'
+                if pose == 'idle':
+                    max_ratio = max(max_ratio, w / h)
+                if pose == 'typing':
+                    b64b, _w, _h = embed(path, EMBED_H, dy=TYPING_FRAME_PX)
+                    encoded[key + '.b'] = f'data:image/png;base64,{b64b}'
+                    frame2 += 1
+    if missing:
+        print('[warn] 注册表引用了不存在的素材：')
+        for m in missing:
+            print('   ', m)
+    print(f'  形态 {len(FORMS)} 个，贴图 {len(encoded)} 张（其中打字第二帧 {frame2} 张）')
 
     disp_w = round(DISPLAY_H * max_ratio)
-
-    # ---- 派生「打字第二帧」：所有打字姿势统一加一个 <key>_f2（整张下移 TYPING_FRAME_PX）----
-    # 这样每套皮肤/每个季节都自动拥有同一套两帧动画，不用逐张出图，也不会因为
-    # 素材来源不同而"有的在眨眼、有的在位移"。
-    frame2_src = [k for k in encoded if _is_typing_key(k)]
-    for key in frame2_src:
-        path, height = SPRITES[key]
-        try:
-            b64, _w, _h = embed(path, height, dy=TYPING_FRAME_PX)
-            encoded[key + '_f2'] = f'data:image/png;base64,{b64}'
-        except Exception as e:
-            print(f'[warn] 第二帧生成失败 {key}: {e}')
-    print(f'  两帧动画：为 {len(frame2_src)} 个打字姿势派生了 _f2 帧（下移 {TYPING_FRAME_PX}px）')
 
     defaults_json = json.dumps(CFG, ensure_ascii=False)
 
     client = (CLIENT
               .replace('__SPRITES__', json.dumps(encoded, ensure_ascii=False))
+              .replace('__SKINS__', json.dumps(FORMS_META, ensure_ascii=False))
               .replace('__CONFIG_DEFAULTS__', defaults_json)
               .replace('__BUILD_VERSION__', BUILD_VERSION)
               .replace('__RATIO__', f'{max_ratio:.4f}')
@@ -500,7 +396,10 @@ def main() -> int:
               .replace('__DEBUG__', 'true' if DEBUG else 'false')
               .replace('DISPLAY_H_JS', str(DISPLAY_H)))
 
-    index = INDEX.replace('__CONFIG_DEFAULTS__', defaults_json).replace('__BUILD_VERSION__', "'" + BUILD_VERSION + "'")
+    index = (INDEX
+             .replace('__CONFIG_DEFAULTS__', defaults_json)
+             .replace('__SKIN_CATALOG__', json.dumps(SKIN_CATALOG, ensure_ascii=False))
+             .replace('__BUILD_VERSION__', "'" + BUILD_VERSION + "'"))
 
     PLUGIN.mkdir(parents=True, exist_ok=True)
     (PLUGIN / 'package.json').write_text(json.dumps(PACKAGE, ensure_ascii=False, indent=2), encoding='utf-8')
