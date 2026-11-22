@@ -1868,7 +1868,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-205933' }),
+            body: JSON.stringify({ v: '20261122-210055' }),
           }).catch(() => {});
         };
         beacon();
@@ -2408,7 +2408,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-205933', results }),
+          body: JSON.stringify({ v: '20261122-210055', results }),
         }).catch(() => {});
       };
 
@@ -2513,7 +2513,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-205933',
+              build: '20261122-210055',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
