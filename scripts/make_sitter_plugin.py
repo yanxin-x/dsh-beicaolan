@@ -620,6 +620,19 @@ def main() -> int:
     (PLUGIN / 'package.json').write_text(json.dumps(PACKAGE, ensure_ascii=False, indent=2), encoding='utf-8')
     (PLUGIN / 'cordis.patch.yml').write_text(PATCH, encoding='utf-8')
     (PLUGIN / 'index.js').write_text(index, encoding='utf-8')
+
+    # 内置的历史模块：整包复制进插件目录，保证"装完即自包含"。
+    # 默认封印不加载（见 80_docs/LEGACY-SEAL.md），但代码必须在包里，
+    # 否则将来解封还得重新构建。
+    vendor_src = ROOT / 'vendor' / 'dsh-pet'
+    vendor_dst = PLUGIN / 'vendor' / 'dsh-pet'
+    if vendor_src.exists():
+        import shutil as _shutil
+        if vendor_dst.exists():
+            _shutil.rmtree(vendor_dst)
+        vendor_dst.parent.mkdir(parents=True, exist_ok=True)
+        _shutil.copytree(vendor_src, vendor_dst)
+        print(f'vendor: dsh-pet {sum(1 for _ in vendor_dst.rglob("*") if _.is_file())} 个文件已打包（默认封印）')
     (PLUGIN / 'client.js').write_text(client, encoding='utf-8')
     readme = (
         '# 贝草兰 · DSH 桌宠插件\n\n'

@@ -59,7 +59,18 @@
     "hoverCard": true,
     "think": true,
     "outfits": true,
-    "pacifier": true
+    "pacifier": true,
+    "legacy": {
+      "panic": true,
+      "desktop": false,
+      "physics": false,
+      "tray": false,
+      "voice": false,
+      "chat": false,
+      "todo": false,
+      "balance": false,
+      "weather": false
+    }
   },
   "resetAt": 0,
   "escalate": {

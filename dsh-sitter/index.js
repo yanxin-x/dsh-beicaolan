@@ -11,10 +11,10 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-const BUILD_VERSION = '20261122-210553';
+const BUILD_VERSION = '20261122-221232';
 const PORT_CANDIDATES = [43717, 43718, 43719, 43720];
 const PORT = PORT_CANDIDATES[0];
-const DEFAULTS = {"displayHeight": 83, "embedHeight": 180, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season", "giftFrameMs": 90}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "typingFrameMs": 220, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": 44, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true, "say": {"gapX": 0.04, "gapY": 0.05, "maxW": 1.12}, "think": {"x": 0.6, "y": 0.02, "size": 0.24}, "sleepBubble": {"x": 0.84, "y": 0.26, "size": 0.24}}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}, "love": {"points": 0}};
+const DEFAULTS = {"displayHeight": 83, "embedHeight": 180, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season", "giftFrameMs": 90}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "typingFrameMs": 220, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": 44, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true, "say": {"gapX": 0.04, "gapY": 0.05, "maxW": 1.12}, "think": {"x": 0.6, "y": 0.02, "size": 0.24}, "sleepBubble": {"x": 0.84, "y": 0.26, "size": 0.24}}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true, "legacy": {"panic": true, "desktop": false, "physics": false, "tray": false, "voice": false, "chat": false, "todo": false, "balance": false, "weather": false}}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}, "love": {"points": 0}};
 const CONFIG_DIR = path.join(os.homedir(), '.dsh', 'dsh-sitter');
 const CONFIG_FILE = path.join(CONFIG_DIR, 'config.json');
 const REMINDER_FILE = path.join(CONFIG_DIR, 'reminders.json');
@@ -497,6 +497,17 @@ function handleInner(req, res) {
       return;
     }
     if (url.startsWith('/selftest')) {
+      // 封印断言：总闸关闭时，vendor/dsh-pet 必须一个模块都没加载过
+      try {
+        const sealed = legacySealed(resolveConfig());
+        const loadedAny = LEGACY_LOADED && Object.keys(LEGACY_LOADED).length > 0;
+        if (sealed && loadedAny) {
+          try {
+            fs.appendFileSync(path.join(CONFIG_DIR, 'handler-error.log'),
+              '[seal-violation] 封印状态下加载了 vendor 模块: ' + Object.keys(LEGACY_LOADED).join(',') + '\n');
+          } catch { /* ignore */ }
+        }
+      } catch { /* ignore */ }
       if (req.method === 'POST') {
         readBody(req, (body) => {
           lastSelfTest = { results: Array.isArray(body?.results) ? body.results : [], at: Date.now(), v: String(body?.v || '') };
@@ -802,6 +813,37 @@ function resolveConfig() {
     merged.displayHeight = Math.max(40, Math.min(140, Math.round(panel.size / 6)));
   }
   return merged;
+}
+
+
+// ───────── 内置历史模块的封印守卫 ─────────
+// 见 80_docs/LEGACY-SEAL.md：默认全封印，只有显式打开子开关且总闸为 false 时才允许加载。
+let LEGACY_LOADED = null;
+
+function legacySealed(cfg) {
+  const legacy = (cfg && cfg.features && cfg.features.legacy) || {};
+  return legacy.panic !== false;      // panic 默认 true = 封印
+}
+
+function legacyFeatureOn(cfg, key) {
+  if (legacySealed(cfg)) return false;
+  const legacy = (cfg && cfg.features && cfg.features.legacy) || {};
+  return legacy[key] === true;
+}
+
+/** 唯一允许加载 vendor 的入口：封印时直接返回 null，绝不 import */
+async function loadLegacy(cfg, key) {
+  if (!legacyFeatureOn(cfg, key)) return null;
+  if (LEGACY_LOADED && LEGACY_LOADED[key]) return LEGACY_LOADED[key];
+  try {
+    const mod = await import('./vendor/dsh-pet/lib/index.js');
+    LEGACY_LOADED = LEGACY_LOADED || {};
+    LEGACY_LOADED[key] = mod;
+    return mod;
+  } catch (e) {
+    try { fs.appendFileSync(path.join(CONFIG_DIR, 'handler-error.log'), String(e && e.stack || e) + '\n'); } catch { /* ignore */ }
+    return null;                      // 失败只降级，绝不让宿主崩
+  }
 }
 
 function saveConfig(patch) {
