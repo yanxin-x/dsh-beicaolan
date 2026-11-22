@@ -77,3 +77,38 @@ CHANGELOG.md        全程变更记录
 - 零网络、零模型调用、零外部依赖（素材与台词全在本地）
 - 状态目录 `~/.dsh/dsh-sitter/`：`config.json` / `coins.json` / `port.txt` / 各类日志
 - 删掉状态目录不影响使用，配置回默认
+
+
+## 安全更新流程（推荐）
+
+`plugin_manager` 是给 AI 用的工具，命令行调不到它。所以更新分成两步：
+**脚本做预检和备份，AI 做装卸，脚本再做校验**。
+
+```powershell
+# ① 更新前：预检 tag 是否存在 + 备份插件包与用户数据 + 生成回滚说明
+node scripts/update_plugin.mjs --tag v1.0.6
+
+# ② 把脚本打印的三条 plugin_manager 命令交给 AI 执行
+#    （remove_bundle → install_bundle → set_plugin）
+
+# ③ 更新后：校验宿主在线、版本、吉吉币是否与备份一致
+node scripts/update_plugin.mjs --verify v1.0.6
+
+# 万一装坏了：打印回滚步骤
+node scripts/update_plugin.mjs --rollback
+```
+
+### 为什么必须"先预检"
+
+`remove_bundle` 会把**依赖和 bundle 登记一起删掉**。如果随后 `install_bundle`
+因为断网/代理失败，结果不是"更新失败"，而是 **插件直接消失**。
+预检会先确认目标 tag 在远端能取到；连不上 GitHub 就**直接拒绝开始**。
+
+### 备份与回滚
+
+- 插件包备份：`06_backups/plugin-<时间戳>/`（420 个文件，可 `install_bundle file:` 直接装回）
+- 用户数据快照：`06_backups/userdata-latest.json`（吉吉币与解锁状态）
+- 回滚说明：`06_backups/ROLLBACK.txt`（三档回退方案）
+
+**用户数据永远不在插件包里**：吉吉币/配置在 `~/.dsh/dsh-sitter/`，
+更新只替换 `node_modules/@local/dsh-sitter/`，两者物理隔离。

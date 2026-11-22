@@ -43,3 +43,6 @@ Thumbs.db
 desktop.ini
 *.log
 /.tmp/
+
+# ── 更新备份（本地产物，不入库）──
+/06_backups/

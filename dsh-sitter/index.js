@@ -11,7 +11,7 @@ import os from 'node:os';
 import path from 'node:path';
 import zlib from 'node:zlib';
 
-const BUILD_VERSION = '20261122-225519';
+const BUILD_VERSION = '20261122-225720';
 const PORT_CANDIDATES = [43717, 43718, 43719, 43720];
 const PORT = PORT_CANDIDATES[0];
 const DEFAULTS = {"displayHeight": 83, "embedHeight": 240, "embedHeightSmall": 64, "debug": false, "outfits": {"count": 4, "hoodieIndex": 1, "force": null, "seasonMode": "season", "giftFrameMs": 90}, "timeline": {"sleepMs": 30000, "frameMs": 380, "blinkMs": 130, "blinkMinGapMs": 3500, "blinkMaxGapMs": 6500, "typingHoldMs": 900, "typingFrameMs": 220, "workHoldMs": 800, "dozeMs": 1800000}, "layout": {"initialLift": 26, "seatInset": 44, "topPad": 30, "freeLeft": null, "freeTop": null, "dragEnabled": true, "say": {"gapX": 0.04, "gapY": 0.05, "maxW": 1.12}, "think": {"x": 0.6, "y": 0.02, "size": 0.24}, "sleepBubble": {"x": 0.84, "y": 0.26, "size": 0.24}}, "brick": {"height": 20, "overlap": 4, "sink": 3}, "seat": {"buttRatio": 0.38}, "features": {"blink": true, "typing": true, "workLink": true, "hoverCard": true, "think": true, "outfits": true, "pacifier": true, "legacy": {"panic": true, "desktop": false, "physics": false, "tray": false, "voice": false, "chat": false, "todo": false, "balance": false, "weather": false}}, "resetAt": 0, "escalate": {"enabled": true, "idleMs": 180000, "stepMs": 10000}, "night": {"from": 23, "to": 7}, "break": {"enabled": true, "workMs": 2400000, "runMs": 7000, "rounds": 3, "text": "小宝贝，歇一会儿眼睛吧～"}, "chat": {"enabled": true, "intervalMs": 75000, "durationMs": 4500, "quietFrom": 1, "quietTo": 7}, "love": {"points": 0}};

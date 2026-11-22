@@ -556,8 +556,8 @@ function todaySpecial(now) {
 
     const ACTIONS_NAMES = ['idle', 'blink', 'work', 'shake', 'cheer', 'attention', 'sleep', 'doze', 'escalate', 'prompt', 'dismiss', 'selftest', 'hover', 'say', 'outfit', 'ultra', 'dragtest', 'diag', 'dom', 'nothink', 'showthink', 'hidepet', 'showpet', 'hit'];
     const OUTFIT_COUNT = 4;
-    const PLUGIN_VERSION = '1.0.6';
-    const BUILD_STAMP = '20261122-225519';
+    const PLUGIN_VERSION = '1.0.6-dev';
+    const BUILD_STAMP = '20261122-225720';
     const LOVE_PER_FLY = 20;       // 攒够 20 颗爱心就起飞一次
     const GIFT_FRAMES = 5;          // 礼物盒帧数（只取盒子够高、能盖满的 5 帧）
     const HOODIE_INDEX = 1;
@@ -1475,7 +1475,7 @@ function todaySpecial(now) {
         h('style', null, PANEL_CSS),
         h('div', { className: 'dsh-sitter-panel-head' },
           h('h2', null, '贝草兰',
-            false ? h('span', {
+            true ? h('span', {
               className: 'dsh-sitter-devbadge',
               title: '开发者版：本地构建，不是公开发布的版本',
             }, '开发者版') : null),
@@ -1930,7 +1930,7 @@ function todaySpecial(now) {
           fetch(API_BASE + '/hello', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ v: '20261122-225519' }),
+            body: JSON.stringify({ v: '20261122-225720' }),
           }).catch(() => {});
         };
         beacon();
@@ -2469,7 +2469,7 @@ function todaySpecial(now) {
         fetch(API_BASE + '/selftest', {
           method: 'POST',
           headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ v: '20261122-225519', results }),
+          body: JSON.stringify({ v: '20261122-225720', results }),
         }).catch(() => {});
       };
 
@@ -2574,7 +2574,7 @@ function todaySpecial(now) {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({
-              build: '20261122-225519',
+              build: '20261122-225720',
               form,
               formSpriteOk: typeof probe === 'string' && probe.indexOf('data:image') === 0,
               outfitForce: RT.outfitForce,
